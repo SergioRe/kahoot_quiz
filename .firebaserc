@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "default": "sergio-dev-93a22"
+  },
+  "targets": {
+    "sergio-dev-93a22": {
+      "hosting": {
+        "kahoot-tech": [
+          "kahoot-tech"
+        ]
+      }
+    }
+  }
+}
