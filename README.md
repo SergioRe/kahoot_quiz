@@ -72,3 +72,25 @@ export default defineConfig([
 ])
 ```
 # kahoot_quiz
+
+## Deploy automático con GitHub Actions
+
+Se agregó el workflow [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) para desplegar en Firebase Hosting en cada `push` a `main` o `master`.
+
+Orden de ejecución:
+
+1. `npm ci`
+2. `npm run build`
+3. `firebase deploy --only hosting --project sergio-dev-93a22`
+
+### Secret requerido
+
+En GitHub, agrega este secret en tu repositorio:
+
+- `FIREBASE_TOKEN`
+
+Puedes generarlo localmente con:
+
+```bash
+firebase login:ci
+```
