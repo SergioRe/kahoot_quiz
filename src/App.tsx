@@ -7,7 +7,11 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AuthPage />} />
-        <Route path="/home" element={<HomePage />} />
+        <Route path="/inicio" element={<HomePage />} />
+        <Route path="/perfil" element={<HomePage />} />
+        <Route path="/examenes" element={<HomePage />} />
+        <Route path="/dashboard" element={<HomePage />} />
+        <Route path="/home" element={<Navigate to="/inicio" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

@@ -33,7 +33,7 @@ export default function AuthPage() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
-        navigate('/home', { replace: true })
+        navigate('/inicio', { replace: true })
       }
     })
 
@@ -67,7 +67,7 @@ export default function AuthPage() {
 
       if (mode === 'login') {
         await signInWithEmailAndPassword(auth, email, password)
-        navigate('/home', { replace: true })
+        navigate('/inicio', { replace: true })
       } else {
         const credentials = await createUserWithEmailAndPassword(auth, email, password)
 
@@ -81,7 +81,7 @@ export default function AuthPage() {
           updatedAt: serverTimestamp(),
         })
 
-        navigate('/home', { replace: true })
+        navigate('/inicio', { replace: true })
       }
 
       clearForm()

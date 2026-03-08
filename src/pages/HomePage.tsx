@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
 import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
 import { auth, db } from '../firebase'
-import AdminUsersDataTable from '../components/AdminUsersDataTable'
-import ExamenesDataTable from '../components/ExamenesDataTable'
+import InicioPage from './home/InicioPage'
+import PerfilPage from './home/PerfilPage'
+import ExamenesPage from './home/ExamenesPage'
+import DashboardAdminPage from './home/DashboardAdminPage'
 
-type HomeView = 'inicio' | 'examen' | 'lista-examenes' | 'perfil' | 'dashboard'
+type HomeSection = 'inicio' | 'lista-examenes' | 'perfil' | 'dashboard'
 type UserRole = 'admin' | 'usuario'
 type ColorTheme = 'azul' | 'morado' | 'emerald'
 
@@ -41,8 +43,8 @@ type ExamenListado = {
 
 export default function HomePage() {
   const navigate = useNavigate()
+  const location = useLocation()
   const [currentUid, setCurrentUid] = useState('')
-  const [view, setView] = useState<HomeView>('inicio')
   const [perfil, setPerfil] = useState<UsuarioPerfil | null>(null)
   const [loading, setLoading] = useState(true)
   const [editing, setEditing] = useState(false)
@@ -61,6 +63,7 @@ export default function HomePage() {
   const [savingExamen, setSavingExamen] = useState(false)
   const [examenMessage, setExamenMessage] = useState('')
   const [editingExamId, setEditingExamId] = useState<string | null>(null)
+  const [showExamForm, setShowExamForm] = useState(false)
   const [deletingExamId, setDeletingExamId] = useState<string | null>(null)
   const [examenes, setExamenes] = useState<ExamenListado[]>([])
   const [examenesLoading, setExamenesLoading] = useState(false)
@@ -147,6 +150,28 @@ export default function HomePage() {
     setPreguntas([{ texto: '', respuestas: ['', '', '', ''], correctaIndex: 0 }])
     setEditingExamId(null)
   }
+
+  const handleStartAddExam = () => {
+    resetExamForm()
+    setExamenMessage('')
+    setShowExamForm(true)
+  }
+
+  const currentSection: HomeSection =
+    location.pathname === '/perfil'
+      ? 'perfil'
+      : location.pathname === '/examenes'
+        ? 'lista-examenes'
+        : location.pathname === '/dashboard'
+          ? 'dashboard'
+          : 'inicio'
+
+  useEffect(() => {
+    const validPaths = ['/inicio', '/perfil', '/examenes', '/dashboard']
+    if (!validPaths.includes(location.pathname)) {
+      navigate('/inicio', { replace: true })
+    }
+  }, [location.pathname, navigate])
 
   const fetchExamenes = async () => {
     try {
@@ -237,7 +262,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const loadUsers = async () => {
-      if (!perfil || perfil.rol !== 'admin' || view !== 'dashboard') {
+      if (!perfil || perfil.rol !== 'admin' || currentSection !== 'dashboard') {
         return
       }
 
@@ -266,15 +291,15 @@ export default function HomePage() {
     }
 
     void loadUsers()
-  }, [perfil, view])
+  }, [perfil, currentSection])
 
   useEffect(() => {
-    if (!perfil || view !== 'lista-examenes') {
+    if (!perfil || currentSection !== 'lista-examenes') {
       return
     }
 
     void fetchExamenes()
-  }, [perfil, view])
+  }, [perfil, currentSection])
 
   const handleLogout = async () => {
     await signOut(auth)
@@ -418,7 +443,8 @@ export default function HomePage() {
       await batch.commit()
       setExamenMessage(editingExamId ? 'Examen actualizado correctamente.' : 'Examen guardado correctamente.')
       resetExamForm()
-      setView('lista-examenes')
+      setShowExamForm(false)
+      navigate('/examenes')
       await fetchExamenes()
     } catch (error) {
       const firebaseError = error as { code?: string; message?: string }
@@ -465,7 +491,8 @@ export default function HomePage() {
       setPreguntas(questions.length > 0 ? questions : [{ texto: '', respuestas: ['', '', '', ''], correctaIndex: 0 }])
       setEditingExamId(examId)
       setExamenMessage('')
-      setView('examen')
+      setShowExamForm(true)
+      navigate('/examenes')
     } catch {
       setExamenesMessage('No se pudo cargar el examen para edición.')
     }
@@ -504,15 +531,11 @@ export default function HomePage() {
   const inactiveRate = totalUsers > 0 ? Math.round((inactiveUsers / totalUsers) * 100) : 0
   const currentTheme = themeStyles[colorTheme]
   const viewTitle =
-    view === 'inicio'
+    currentSection === 'inicio'
       ? 'Inicio'
-      : view === 'examen'
-        ? editingExamId
-          ? 'Editar examen'
-          : 'Registrar examen'
-        : view === 'lista-examenes'
+      : currentSection === 'lista-examenes'
           ? 'Ver exámenes'
-        : view === 'perfil'
+        : currentSection === 'perfil'
           ? 'Editar datos del perfil'
           : 'Dashboard admin'
 
@@ -557,45 +580,36 @@ export default function HomePage() {
             <nav className="mt-5 grid gap-2">
               <button
                 type="button"
-                onClick={() => setView('inicio')}
+                onClick={() => navigate('/inicio')}
                 className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  view === 'inicio' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  currentSection === 'inicio' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 Inicio
               </button>
               <button
                 type="button"
-                onClick={() => setView('perfil')}
+                onClick={() => navigate('/perfil')}
                 className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  view === 'perfil' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  currentSection === 'perfil' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 Editar datos del perfil
               </button>
               <button
                 type="button"
-                onClick={() => setView('examen')}
+                onClick={() => navigate('/examenes')}
                 className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  view === 'examen' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Registrar examen
-              </button>
-              <button
-                type="button"
-                onClick={() => setView('lista-examenes')}
-                className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  view === 'lista-examenes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  currentSection === 'lista-examenes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 Ver exámenes
               </button>
               <button
                 type="button"
-                onClick={() => setView('dashboard')}
+                onClick={() => navigate('/dashboard')}
                 className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  view === 'dashboard' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  currentSection === 'dashboard' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 Dashboard admin
@@ -625,310 +639,71 @@ export default function HomePage() {
               <h2 className="text-2xl font-bold text-slate-900">{viewTitle}</h2>
             </header>
 
-            {view === 'inicio' && (
-              <div className="rounded-xl border border-slate-200 p-4">
-                <p className="text-sm text-slate-700">Tu usuario está activo y puedes gestionar tus datos desde el menú.</p>
-              </div>
+            {currentSection === 'inicio' && <InicioPage />}
+
+            {currentSection === 'perfil' && (
+              <PerfilPage
+                nombre={nombre}
+                email={perfil.email}
+                editing={editing}
+                saving={saving}
+                statusMessage={statusMessage}
+                onNombreChange={setNombre}
+                onStartEdit={() => {
+                  setEditing(true)
+                  setStatusMessage('')
+                }}
+                onSubmit={handleSaveProfile}
+              />
             )}
 
-            {view === 'perfil' && (
-              <form className="grid gap-3 rounded-xl border border-slate-200 p-4" onSubmit={handleSaveProfile}>
-                <label htmlFor="profileName" className="text-sm font-semibold text-slate-700">
-                  Nombre
-                </label>
-                <input
-                  id="profileName"
-                  type="text"
-                  value={nombre}
-                  onChange={(event) => setNombre(event.target.value)}
-                  disabled={!editing}
-                  required
-                  className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 disabled:bg-slate-100"
-                />
-
-                <label htmlFor="profileEmail" className="text-sm font-semibold text-slate-700">
-                  Correo electrónico
-                </label>
-                <input
-                  id="profileEmail"
-                  type="email"
-                  value={perfil.email}
-                  disabled
-                  className="w-full rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-900"
-                />
-
-                <div className="mt-2 flex gap-2">
-                  {!editing ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setEditing(true)
-                        setStatusMessage('')
-                      }}
-                      className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
-                    >
-                      Editar
-                    </button>
-                  ) : (
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
-                    >
-                      {saving ? 'Guardando...' : 'Guardar'}
-                    </button>
-                  )}
-                </div>
-
-                {statusMessage && <p className="text-sm text-slate-600">{statusMessage}</p>}
-              </form>
+            {currentSection === 'dashboard' && (
+              <DashboardAdminPage
+                perfil={perfil}
+                totalUsers={totalUsers}
+                activeUsers={activeUsers}
+                inactiveUsers={inactiveUsers}
+                adminCount={adminCount}
+                activeRate={activeRate}
+                inactiveRate={inactiveRate}
+                adminUsers={adminUsers}
+                adminLoading={adminLoading}
+                adminMessage={adminMessage}
+                currentUid={currentUid}
+                onToggleActivo={handleToggleActivo}
+                onToggleRol={handleToggleRol}
+              />
             )}
 
-            {view === 'examen' && (
-              <form className="grid gap-4 rounded-xl border border-slate-200 p-4" onSubmit={handleSaveExam}>
-                <div className="grid gap-2">
-                  <label htmlFor="examTitle" className="text-sm font-semibold text-slate-700">
-                    Título del examen
-                  </label>
-                  <input
-                    id="examTitle"
-                    type="text"
-                    value={examenTitulo}
-                    onChange={(event) => setExamenTitulo(event.target.value)}
-                    placeholder="Ejemplo: Matemática básica"
-                    required
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                  />
-                </div>
-
-                <div className="grid gap-2">
-                  <label htmlFor="examDescription" className="text-sm font-semibold text-slate-700">
-                    Descripción (opcional)
-                  </label>
-                  <textarea
-                    id="examDescription"
-                    value={examenDescripcion}
-                    onChange={(event) => setExamenDescripcion(event.target.value)}
-                    rows={3}
-                    placeholder="Describe brevemente el examen"
-                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                  />
-                </div>
-
-                <div className="grid gap-4">
-                  {preguntas.map((question, questionIndex) => (
-                    <article key={questionIndex} className="rounded-xl border border-slate-200 p-4">
-                      <div className="mb-3 flex items-center justify-between gap-3">
-                        <h3 className="text-sm font-bold text-slate-900">Pregunta {questionIndex + 1}</h3>
-                        {preguntas.length > 1 && (
-                          <button
-                            type="button"
-                            onClick={() => removeQuestion(questionIndex)}
-                            className="rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
-                          >
-                            Eliminar
-                          </button>
-                        )}
-                      </div>
-
-                      <label className="text-xs font-semibold uppercase text-slate-500">Texto de la pregunta</label>
-                      <input
-                        type="text"
-                        value={question.texto}
-                        onChange={(event) => updateQuestionText(questionIndex, event.target.value)}
-                        placeholder="Escribe la pregunta"
-                        required
-                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                      />
-
-                      <div className="mt-4 grid gap-2">
-                        {question.respuestas.map((answer, answerIndex) => (
-                          <div key={answerIndex} className="flex items-center gap-2">
-                            <input
-                              type="radio"
-                              name={`correct-${questionIndex}`}
-                              checked={question.correctaIndex === answerIndex}
-                              onChange={() => updateCorrectAnswer(questionIndex, answerIndex)}
-                              className="h-4 w-4"
-                            />
-                            <input
-                              type="text"
-                              value={answer}
-                              onChange={(event) => updateAnswer(questionIndex, answerIndex, event.target.value)}
-                              placeholder={`Respuesta ${answerIndex + 1}`}
-                              required
-                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                            />
-                          </div>
-                        ))}
-                        <p className="text-xs text-slate-500">Marca con el radio la opción correcta.</p>
-                      </div>
-                    </article>
-                  ))}
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={addQuestion}
-                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-                  >
-                    + Agregar pregunta
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={savingExamen}
-                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {savingExamen ? 'Guardando...' : editingExamId ? 'Guardar cambios' : 'Guardar examen'}
-                  </button>
-                  {editingExamId && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        resetExamForm()
-                        setExamenMessage('')
-                      }}
-                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
-                    >
-                      Cancelar edición
-                    </button>
-                  )}
-                </div>
-
-                {examenMessage && <p className="text-sm text-slate-600">{examenMessage}</p>}
-              </form>
-            )}
-
-            {view === 'dashboard' && (
-              <section className="grid gap-4">
-                {perfil.rol !== 'admin' ? (
-                  <div className="rounded-xl border border-slate-200 p-4">
-                    <p className="text-sm text-slate-700">No tienes permisos de administrador para acceder al dashboard.</p>
-                  </div>
-                ) : (
-                  <>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
-                  <article className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase text-slate-500">Total usuarios</p>
-                    <p className="mt-2 text-3xl font-bold text-slate-900">{totalUsers}</p>
-                    <p className="mt-1 text-xs text-slate-500">Base general del sistema</p>
-                  </article>
-
-                  <article className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase text-slate-500">Activos</p>
-                    <p className="mt-2 text-3xl font-bold text-emerald-600">{activeUsers}</p>
-                    <p className="mt-1 text-xs text-slate-500">{activeRate}% de usuarios activos</p>
-                  </article>
-
-                  <article className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase text-slate-500">Inactivos</p>
-                    <p className="mt-2 text-3xl font-bold text-rose-600">{inactiveUsers}</p>
-                    <p className="mt-1 text-xs text-slate-500">{inactiveRate}% de usuarios inactivos</p>
-                  </article>
-
-                  <article className="rounded-xl border border-slate-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase text-slate-500">Administradores</p>
-                    <p className="mt-2 text-3xl font-bold text-indigo-600">{adminCount}</p>
-                    <p className="mt-1 text-xs text-slate-500">Con permisos de gestión</p>
-                  </article>
-                </div>
-
-                <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
-                  <section className="rounded-xl border border-slate-200 bg-white p-4 xl:col-span-2">
-                    <h2 className="text-sm font-semibold text-slate-900">Project Statistics</h2>
-                    <p className="mt-1 text-xs text-slate-500">Resumen operativo de cuentas y estado del sistema</p>
-
-                    <div className="mt-4 grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <div className="rounded-lg border border-slate-200 p-3">
-                        <p className="text-xs font-semibold uppercase text-slate-500">Usuarios activos</p>
-                        <p className="mt-1 text-xl font-bold text-slate-900">{activeUsers}</p>
-                        <div className="mt-3 h-2 rounded-full bg-slate-100">
-                          <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${activeRate}%` }} />
-                        </div>
-                      </div>
-
-                      <div className="rounded-lg border border-slate-200 p-3">
-                        <p className="text-xs font-semibold uppercase text-slate-500">Usuarios inactivos</p>
-                        <p className="mt-1 text-xl font-bold text-slate-900">{inactiveUsers}</p>
-                        <div className="mt-3 h-2 rounded-full bg-slate-100">
-                          <div className="h-2 rounded-full bg-rose-500" style={{ width: `${inactiveRate}%` }} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-6 items-end gap-2">
-                      {[32, 44, 40, 56, 52, 68].map((value, index) => (
-                        <div key={index} className="flex flex-col items-center gap-1">
-                          <div className="w-full rounded bg-indigo-100" style={{ height: `${value}px` }} />
-                          <span className="text-[10px] font-semibold text-slate-500">M{index + 1}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-
-                  <section className="rounded-xl border border-slate-200 bg-white p-4">
-                    <h2 className="text-sm font-semibold text-slate-900">Projects Monthly</h2>
-                    <p className="mt-1 text-xs text-slate-500">Distribución por estado</p>
-
-                    <div className="mt-4 space-y-3">
-                      <div>
-                        <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
-                          <span>Activos</span>
-                          <span>{activeUsers}</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-slate-100">
-                          <div className="h-2 rounded-full bg-emerald-500" style={{ width: `${activeRate}%` }} />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
-                          <span>Inactivos</span>
-                          <span>{inactiveUsers}</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-slate-100">
-                          <div className="h-2 rounded-full bg-rose-500" style={{ width: `${inactiveRate}%` }} />
-                        </div>
-                      </div>
-
-                      <div>
-                        <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
-                          <span>Admins</span>
-                          <span>{adminCount}</span>
-                        </div>
-                        <div className="h-2 rounded-full bg-slate-100">
-                          <div
-                            className="h-2 rounded-full bg-indigo-500"
-                            style={{ width: `${totalUsers > 0 ? Math.round((adminCount / totalUsers) * 100) : 0}%` }}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-                </div>
-
-                <AdminUsersDataTable
-                  users={adminUsers}
-                  loading={adminLoading}
-                  message={adminMessage}
-                  currentUid={currentUid}
-                  onToggleActivo={handleToggleActivo}
-                  onToggleRol={handleToggleRol}
-                />
-                  </>
-                )}
-              </section>
-            )}
-
-            {view === 'lista-examenes' && (
-              <ExamenesDataTable
+            {currentSection === 'lista-examenes' && (
+              <ExamenesPage
+                showExamForm={showExamForm}
+                editingExamId={editingExamId}
+                examenTitulo={examenTitulo}
+                examenDescripcion={examenDescripcion}
+                preguntas={preguntas}
+                savingExamen={savingExamen}
+                examenMessage={examenMessage}
                 examenes={examenes}
-                loading={examenesLoading}
-                message={examenesMessage}
-                deletingExamId={deletingExamId ?? undefined}
-                onEdit={handleEditExam}
-                onDelete={handleDeleteExam}
+                examenesLoading={examenesLoading}
+                examenesMessage={examenesMessage}
+                deletingExamId={deletingExamId}
+                onShowAdd={handleStartAddExam}
+                onExamTitleChange={setExamenTitulo}
+                onExamDescriptionChange={setExamenDescripcion}
+                onAddQuestion={addQuestion}
+                onRemoveQuestion={removeQuestion}
+                onQuestionTextChange={updateQuestionText}
+                onAnswerChange={updateAnswer}
+                onCorrectAnswerChange={updateCorrectAnswer}
+                onCancel={() => {
+                  resetExamForm()
+                  setShowExamForm(false)
+                  setExamenMessage('')
+                }}
+                onSubmit={handleSaveExam}
+                onEditExam={handleEditExam}
+                onDeleteExam={handleDeleteExam}
               />
             )}
           </section>
