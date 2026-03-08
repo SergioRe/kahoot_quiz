@@ -3,14 +3,20 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20",
+    "npm": ">=10"
+  },
   "scripts": {
     "dev": "BROWSERSLIST_IGNORE_OLD_DATA=true vite",
     "build": "BROWSERSLIST_IGNORE_OLD_DATA=true tsc -b && BROWSERSLIST_IGNORE_OLD_DATA=true vite build",
     "preview": "BROWSERSLIST_IGNORE_OLD_DATA=true vite preview"
   },
   "dependencies": {
+    "firebase": "^11.9.1",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.13.1"
   },
   "devDependencies": {
     "@types/node": "^18.19.0",
