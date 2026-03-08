@@ -2,13 +2,20 @@ import { useEffect, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc } from 'firebase/firestore'
+import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import AdminUsersDataTable from '../components/AdminUsersDataTable'
+import ExamenesDataTable from '../components/ExamenesDataTable'
 
-type HomeView = 'inicio' | 'perfil' | 'dashboard'
+type HomeView = 'inicio' | 'examen' | 'lista-examenes' | 'perfil' | 'dashboard'
 type UserRole = 'admin' | 'usuario'
 type ColorTheme = 'azul' | 'morado' | 'emerald'
+
+type ExamenPregunta = {
+  texto: string
+  respuestas: [string, string, string, string]
+  correctaIndex: number
+}
 
 type UsuarioPerfil = {
   nombre: string
@@ -25,6 +32,13 @@ type UsuarioAdmin = {
   rol: UserRole
 }
 
+type ExamenListado = {
+  id: string
+  titulo: string
+  descripcion: string
+  totalPreguntas: number
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
   const [currentUid, setCurrentUid] = useState('')
@@ -39,6 +53,18 @@ export default function HomePage() {
   const [adminLoading, setAdminLoading] = useState(false)
   const [adminMessage, setAdminMessage] = useState('')
   const [colorTheme, setColorTheme] = useState<ColorTheme>('azul')
+  const [examenTitulo, setExamenTitulo] = useState('')
+  const [examenDescripcion, setExamenDescripcion] = useState('')
+  const [preguntas, setPreguntas] = useState<ExamenPregunta[]>([
+    { texto: '', respuestas: ['', '', '', ''], correctaIndex: 0 },
+  ])
+  const [savingExamen, setSavingExamen] = useState(false)
+  const [examenMessage, setExamenMessage] = useState('')
+  const [editingExamId, setEditingExamId] = useState<string | null>(null)
+  const [deletingExamId, setDeletingExamId] = useState<string | null>(null)
+  const [examenes, setExamenes] = useState<ExamenListado[]>([])
+  const [examenesLoading, setExamenesLoading] = useState(false)
+  const [examenesMessage, setExamenesMessage] = useState('')
 
   const themeStyles: Record<ColorTheme, { main: string; surface: string; accent: string }> = {
     azul: {
@@ -75,6 +101,79 @@ export default function HomePage() {
       if (prevTheme === 'morado') return 'emerald'
       return 'azul'
     })
+  }
+
+  const addQuestion = () => {
+    setPreguntas((prev) => [...prev, { texto: '', respuestas: ['', '', '', ''], correctaIndex: 0 }])
+  }
+
+  const removeQuestion = (index: number) => {
+    setPreguntas((prev) => prev.filter((_, questionIndex) => questionIndex !== index))
+  }
+
+  const updateQuestionText = (index: number, value: string) => {
+    setPreguntas((prev) =>
+      prev.map((question, questionIndex) => (questionIndex === index ? { ...question, texto: value } : question)),
+    )
+  }
+
+  const updateAnswer = (questionIndex: number, answerIndex: number, value: string) => {
+    setPreguntas((prev) =>
+      prev.map((question, idx) => {
+        if (idx !== questionIndex) {
+          return question
+        }
+
+        const nextAnswers = [...question.respuestas] as [string, string, string, string]
+        nextAnswers[answerIndex] = value
+
+        return {
+          ...question,
+          respuestas: nextAnswers,
+        }
+      }),
+    )
+  }
+
+  const updateCorrectAnswer = (questionIndex: number, correctIndex: number) => {
+    setPreguntas((prev) =>
+      prev.map((question, idx) => (idx === questionIndex ? { ...question, correctaIndex: correctIndex } : question)),
+    )
+  }
+
+  const resetExamForm = () => {
+    setExamenTitulo('')
+    setExamenDescripcion('')
+    setPreguntas([{ texto: '', respuestas: ['', '', '', ''], correctaIndex: 0 }])
+    setEditingExamId(null)
+  }
+
+  const fetchExamenes = async () => {
+    try {
+      setExamenesLoading(true)
+      setExamenesMessage('')
+
+      const snapshot = await getDocs(collection(db, 'examenes'))
+      const list = snapshot.docs
+        .map((docItem) => {
+          const data = docItem.data() as Partial<ExamenListado> & { isSeed?: boolean }
+          return {
+            id: docItem.id,
+            titulo: data.titulo ?? 'Sin título',
+            descripcion: data.descripcion ?? '',
+            totalPreguntas: typeof data.totalPreguntas === 'number' ? data.totalPreguntas : 0,
+            isSeed: data.isSeed === true,
+          }
+        })
+        .filter((item) => !item.isSeed)
+        .map(({ isSeed: _, ...item }) => item)
+
+      setExamenes(list)
+    } catch {
+      setExamenesMessage('No se pudieron cargar los exámenes.')
+    } finally {
+      setExamenesLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -169,6 +268,14 @@ export default function HomePage() {
     void loadUsers()
   }, [perfil, view])
 
+  useEffect(() => {
+    if (!perfil || view !== 'lista-examenes') {
+      return
+    }
+
+    void fetchExamenes()
+  }, [perfil, view])
+
   const handleLogout = async () => {
     await signOut(auth)
     navigate('/', { replace: true })
@@ -234,6 +341,161 @@ export default function HomePage() {
     }
   }
 
+  const handleSaveExam = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    setExamenMessage('')
+
+    if (!perfil || !currentUid) {
+      return
+    }
+
+    if (!examenTitulo.trim()) {
+      setExamenMessage('Debes ingresar un título para el examen.')
+      return
+    }
+
+    if (preguntas.length === 0) {
+      setExamenMessage('Debes agregar al menos una pregunta.')
+      return
+    }
+
+    const hasInvalidQuestion = preguntas.some(
+      (question) => !question.texto.trim() || question.respuestas.some((answer) => !answer.trim()),
+    )
+
+    if (hasInvalidQuestion) {
+      setExamenMessage('Completa el texto y las 4 respuestas de todas las preguntas.')
+      return
+    }
+
+    try {
+      setSavingExamen(true)
+
+      const examId = editingExamId
+        ? editingExamId
+        : (
+            await addDoc(collection(db, 'examenes'), {
+              titulo: examenTitulo.trim(),
+              descripcion: examenDescripcion.trim(),
+              creadoPorUid: currentUid,
+              creadoPorNombre: perfil.nombre || perfil.email,
+              creadoPorEmail: perfil.email,
+              totalPreguntas: preguntas.length,
+              activo: true,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            })
+          ).id
+
+      if (editingExamId) {
+        await updateDoc(doc(db, 'examenes', examId), {
+          titulo: examenTitulo.trim(),
+          descripcion: examenDescripcion.trim(),
+          totalPreguntas: preguntas.length,
+          updatedAt: serverTimestamp(),
+        })
+      }
+
+      const questionCollectionRef = collection(db, 'examenes', examId, 'preguntas')
+      const existingQuestions = await getDocs(questionCollectionRef)
+      const batch = writeBatch(db)
+
+      existingQuestions.forEach((questionDoc) => {
+        batch.delete(questionDoc.ref)
+      })
+
+      preguntas.forEach((question, index) => {
+        const questionRef = doc(questionCollectionRef)
+        batch.set(questionRef, {
+          texto: question.texto.trim(),
+          respuestas: question.respuestas.map((answer) => answer.trim()),
+          correctaIndex: question.correctaIndex,
+          orden: index + 1,
+          createdAt: serverTimestamp(),
+        })
+      })
+
+      await batch.commit()
+      setExamenMessage(editingExamId ? 'Examen actualizado correctamente.' : 'Examen guardado correctamente.')
+      resetExamForm()
+      setView('lista-examenes')
+      await fetchExamenes()
+    } catch (error) {
+      const firebaseError = error as { code?: string; message?: string }
+      const errorCode = firebaseError.code ?? 'unknown-error'
+      setExamenMessage(`No se pudo guardar el examen (${errorCode}).`)
+    } finally {
+      setSavingExamen(false)
+    }
+  }
+
+  const handleEditExam = async (examId: string) => {
+    try {
+      setExamenesMessage('')
+      const examDoc = await getDoc(doc(db, 'examenes', examId))
+      if (!examDoc.exists()) {
+        setExamenesMessage('El examen no existe.')
+        return
+      }
+
+      const examData = examDoc.data() as Partial<ExamenListado>
+      const questionsSnapshot = await getDocs(collection(db, 'examenes', examId, 'preguntas'))
+
+      const questions = questionsSnapshot.docs
+        .map((questionDoc) => {
+          const data = questionDoc.data() as Partial<ExamenPregunta> & { orden?: number }
+          const answers = Array.isArray(data.respuestas) ? data.respuestas : []
+          return {
+            texto: data.texto ?? '',
+            respuestas: [
+              answers[0] ?? '',
+              answers[1] ?? '',
+              answers[2] ?? '',
+              answers[3] ?? '',
+            ] as [string, string, string, string],
+            correctaIndex: typeof data.correctaIndex === 'number' ? data.correctaIndex : 0,
+            orden: typeof data.orden === 'number' ? data.orden : 0,
+          }
+        })
+        .sort((a, b) => a.orden - b.orden)
+        .map(({ orden: _, ...item }) => item)
+
+      setExamenTitulo(examData.titulo ?? '')
+      setExamenDescripcion(examData.descripcion ?? '')
+      setPreguntas(questions.length > 0 ? questions : [{ texto: '', respuestas: ['', '', '', ''], correctaIndex: 0 }])
+      setEditingExamId(examId)
+      setExamenMessage('')
+      setView('examen')
+    } catch {
+      setExamenesMessage('No se pudo cargar el examen para edición.')
+    }
+  }
+
+  const handleDeleteExam = async (examId: string) => {
+    try {
+      setDeletingExamId(examId)
+      setExamenesMessage('')
+
+      const questionsSnapshot = await getDocs(collection(db, 'examenes', examId, 'preguntas'))
+      const batch = writeBatch(db)
+
+      questionsSnapshot.forEach((questionDoc) => {
+        batch.delete(questionDoc.ref)
+      })
+
+      await batch.commit()
+      await deleteDoc(doc(db, 'examenes', examId))
+
+      setExamenes((prev) => prev.filter((item) => item.id !== examId))
+      setExamenesMessage('Examen eliminado correctamente.')
+    } catch {
+      setExamenesMessage('No se pudo eliminar el examen.')
+    } finally {
+      setDeletingExamId(null)
+    }
+  }
+
+
   const totalUsers = adminUsers.length
   const activeUsers = adminUsers.filter((item) => item.activo).length
   const inactiveUsers = totalUsers - activeUsers
@@ -241,7 +503,18 @@ export default function HomePage() {
   const activeRate = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0
   const inactiveRate = totalUsers > 0 ? Math.round((inactiveUsers / totalUsers) * 100) : 0
   const currentTheme = themeStyles[colorTheme]
-  const viewTitle = view === 'inicio' ? 'Inicio' : view === 'perfil' ? 'Editar datos del perfil' : 'Dashboard admin'
+  const viewTitle =
+    view === 'inicio'
+      ? 'Inicio'
+      : view === 'examen'
+        ? editingExamId
+          ? 'Editar examen'
+          : 'Registrar examen'
+        : view === 'lista-examenes'
+          ? 'Ver exámenes'
+        : view === 'perfil'
+          ? 'Editar datos del perfil'
+          : 'Dashboard admin'
 
   if (loading || !perfil) {
     return (
@@ -299,6 +572,24 @@ export default function HomePage() {
                 }`}
               >
                 Editar datos del perfil
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('examen')}
+                className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
+                  view === 'examen' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Registrar examen
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('lista-examenes')}
+                className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
+                  view === 'lista-examenes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Ver exámenes
               </button>
               <button
                 type="button"
@@ -390,6 +681,122 @@ export default function HomePage() {
                 </div>
 
                 {statusMessage && <p className="text-sm text-slate-600">{statusMessage}</p>}
+              </form>
+            )}
+
+            {view === 'examen' && (
+              <form className="grid gap-4 rounded-xl border border-slate-200 p-4" onSubmit={handleSaveExam}>
+                <div className="grid gap-2">
+                  <label htmlFor="examTitle" className="text-sm font-semibold text-slate-700">
+                    Título del examen
+                  </label>
+                  <input
+                    id="examTitle"
+                    type="text"
+                    value={examenTitulo}
+                    onChange={(event) => setExamenTitulo(event.target.value)}
+                    placeholder="Ejemplo: Matemática básica"
+                    required
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <label htmlFor="examDescription" className="text-sm font-semibold text-slate-700">
+                    Descripción (opcional)
+                  </label>
+                  <textarea
+                    id="examDescription"
+                    value={examenDescripcion}
+                    onChange={(event) => setExamenDescripcion(event.target.value)}
+                    rows={3}
+                    placeholder="Describe brevemente el examen"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div className="grid gap-4">
+                  {preguntas.map((question, questionIndex) => (
+                    <article key={questionIndex} className="rounded-xl border border-slate-200 p-4">
+                      <div className="mb-3 flex items-center justify-between gap-3">
+                        <h3 className="text-sm font-bold text-slate-900">Pregunta {questionIndex + 1}</h3>
+                        {preguntas.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => removeQuestion(questionIndex)}
+                            className="rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50"
+                          >
+                            Eliminar
+                          </button>
+                        )}
+                      </div>
+
+                      <label className="text-xs font-semibold uppercase text-slate-500">Texto de la pregunta</label>
+                      <input
+                        type="text"
+                        value={question.texto}
+                        onChange={(event) => updateQuestionText(questionIndex, event.target.value)}
+                        placeholder="Escribe la pregunta"
+                        required
+                        className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                      />
+
+                      <div className="mt-4 grid gap-2">
+                        {question.respuestas.map((answer, answerIndex) => (
+                          <div key={answerIndex} className="flex items-center gap-2">
+                            <input
+                              type="radio"
+                              name={`correct-${questionIndex}`}
+                              checked={question.correctaIndex === answerIndex}
+                              onChange={() => updateCorrectAnswer(questionIndex, answerIndex)}
+                              className="h-4 w-4"
+                            />
+                            <input
+                              type="text"
+                              value={answer}
+                              onChange={(event) => updateAnswer(questionIndex, answerIndex, event.target.value)}
+                              placeholder={`Respuesta ${answerIndex + 1}`}
+                              required
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                            />
+                          </div>
+                        ))}
+                        <p className="text-xs text-slate-500">Marca con el radio la opción correcta.</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={addQuestion}
+                    className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                  >
+                    + Agregar pregunta
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingExamen}
+                    className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {savingExamen ? 'Guardando...' : editingExamId ? 'Guardar cambios' : 'Guardar examen'}
+                  </button>
+                  {editingExamId && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        resetExamForm()
+                        setExamenMessage('')
+                      }}
+                      className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+                    >
+                      Cancelar edición
+                    </button>
+                  )}
+                </div>
+
+                {examenMessage && <p className="text-sm text-slate-600">{examenMessage}</p>}
               </form>
             )}
 
@@ -512,6 +919,17 @@ export default function HomePage() {
                   </>
                 )}
               </section>
+            )}
+
+            {view === 'lista-examenes' && (
+              <ExamenesDataTable
+                examenes={examenes}
+                loading={examenesLoading}
+                message={examenesMessage}
+                deletingExamId={deletingExamId ?? undefined}
+                onEdit={handleEditExam}
+                onDelete={handleDeleteExam}
+              />
             )}
           </section>
         </div>

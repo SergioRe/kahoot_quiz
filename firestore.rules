@@ -1,0 +1,45 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+        && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
+    }
+
+    match /usuarios/{uid} {
+      allow create: if isOwner(uid) || isAdmin();
+      allow get: if isOwner(uid) || isAdmin();
+      allow list: if isAdmin();
+      allow update: if isOwner(uid) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    match /examenes/{examId} {
+      allow create: if signedIn();
+      allow get, list: if signedIn();
+      allow update, delete: if signedIn()
+        && (
+          isAdmin()
+          || resource.data.creadoPorUid == request.auth.uid
+        );
+
+      match /preguntas/{questionId} {
+        allow create, update, delete: if signedIn()
+          && (
+            isAdmin()
+            || get(/databases/$(database)/documents/examenes/$(examId)).data.creadoPorUid == request.auth.uid
+          );
+        allow get, list: if signedIn();
+      }
+    }
+  }
+}
