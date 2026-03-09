@@ -141,7 +141,7 @@ export default function AdminUsersDataTable({
         </article>
       </div>
 
-      <div className="rounded-xl border border-slate-200 p-4">
+      <div className="min-w-0 rounded-xl border border-slate-200 p-4">
         <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="text-sm font-semibold text-slate-900">Project List / User Management</h2>
@@ -212,8 +212,8 @@ export default function AdminUsersDataTable({
           </select>
         </div>
 
-        <div className="mt-4 max-h-[26rem] overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
-          <table className="min-w-[860px] text-left text-sm">
+        <div className="mt-4 max-h-[26rem] w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
+          <table className="min-w-[860px] w-full text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-900">
                   <th className="px-2 py-2 font-bold">

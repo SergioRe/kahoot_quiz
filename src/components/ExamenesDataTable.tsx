@@ -61,10 +61,10 @@ export default function ExamenesDataTable({
         <table className="min-w-[760px] w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-600 bg-white">
-              <th className="px-2 py-2 font-semibold">Nombre de examen</th>
-              <th className="px-2 py-2 font-semibold">Descripción</th>
-              <th className="px-2 py-2 font-semibold">Cantidad de preguntas</th>
-              <th className="px-2 py-2 font-semibold">Acciones</th>
+              <th className="px-2 py-2 font-bold">Nombre de examen</th>
+              <th className="px-2 py-2 font-bold">Descripción</th>
+              <th className="px-2 py-2 font-bold">Cantidad de preguntas</th>
+              <th className="px-2 py-2 font-bold">Acciones</th>
             </tr>
           </thead>
           <tbody>
