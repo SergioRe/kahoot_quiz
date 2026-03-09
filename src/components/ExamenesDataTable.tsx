@@ -57,14 +57,14 @@ export default function ExamenesDataTable({
         />
       </div>
 
-      <div className="overflow-x-auto overflow-y-auto rounded-lg border border-slate-100 max-h-[26rem]">
+      <div className="max-h-[26rem] overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
         <table className="min-w-[760px] text-left text-sm">
-          <thead className="sticky top-0 z-10">
+          <thead>
             <tr className="border-b border-slate-200 text-slate-600 bg-white">
-              <th className="px-2 py-2 font-semibold whitespace-nowrap">Nombre de examen</th>
-              <th className="px-2 py-2 font-semibold whitespace-nowrap">Descripción</th>
-              <th className="px-2 py-2 font-semibold whitespace-nowrap">Cantidad de preguntas</th>
-              <th className="px-2 py-2 font-semibold whitespace-nowrap">Acciones</th>
+              <th className="px-2 py-2 font-semibold">Nombre de examen</th>
+              <th className="px-2 py-2 font-semibold">Descripción</th>
+              <th className="px-2 py-2 font-semibold">Cantidad de preguntas</th>
+              <th className="px-2 py-2 font-semibold">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -85,9 +85,9 @@ export default function ExamenesDataTable({
                 <tr key={item.id} className="border-b border-slate-100">
                   <td className="px-2 py-2 text-slate-800">{item.titulo}</td>
                   <td className="px-2 py-2 text-slate-700">{item.descripcion || '-'}</td>
-                  <td className="px-2 py-2 text-slate-700 whitespace-nowrap">{item.totalPreguntas}</td>
+                  <td className="px-2 py-2 text-slate-700">{item.totalPreguntas}</td>
                   <td className="px-2 py-2">
-                    <div className="flex flex-wrap gap-2 whitespace-nowrap">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         type="button"
                         onClick={() => onEdit(item.id)}

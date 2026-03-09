@@ -620,14 +620,14 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleToggleTheme}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
               >
                 Cambiar color ({currentTheme.accent})
               </button>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="rounded-lg bg-gradient-to-r from-indigo-600 to-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-105"
+                className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-105"
               >
                 Cerrar sesión
               </button>
