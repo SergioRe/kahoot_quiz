@@ -42,7 +42,7 @@ export default function ExamenesDataTable({
   const paged = filtered.slice((safePage - 1) * pageSize, safePage * pageSize)
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-4">
+    <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-slate-900">Lista de exámenes</h3>
         <input
@@ -57,8 +57,8 @@ export default function ExamenesDataTable({
         />
       </div>
 
-      <div className="overflow-x-auto rounded-lg border border-slate-100">
-        <table className="block max-h-[26rem] min-w-[760px] overflow-y-auto text-left text-sm">
+      <div className="max-h-[26rem] w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
+        <table className="min-w-[760px] w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-600 bg-white">
               <th className="px-2 py-2 font-semibold">Nombre de examen</th>
