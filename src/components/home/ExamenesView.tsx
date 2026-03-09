@@ -16,6 +16,7 @@ type ExamenListado = {
 
 type Props = {
   showExamForm: boolean
+  showExamList: boolean
   editingExamId: string | null
   examenTitulo: string
   examenDescripcion: string
@@ -40,8 +41,11 @@ type Props = {
   onDeleteExam: (examId: string) => Promise<void>
 }
 
+const MAX_QUESTIONS_PER_EXAM = 5
+
 export default function ExamenesView({
   showExamForm,
+  showExamList,
   editingExamId,
   examenTitulo,
   examenDescripcion,
@@ -67,17 +71,19 @@ export default function ExamenesView({
 }: Props) {
   return (
     <div className="grid gap-4">
-      <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
-        <h3 className="text-sm font-semibold text-slate-700">Gestión de exámenes</h3>
-        <button
-          type="button"
-          onClick={onShowAdd}
-          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
-        >
-          <span aria-hidden="true">＋</span>
-          <span>Agregar examen</span>
-        </button>
-      </div>
+      {showExamList && (
+        <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
+          <h3 className="text-sm font-semibold text-slate-700">Gestión de exámenes</h3>
+          <button
+            type="button"
+            onClick={onShowAdd}
+            className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
+          >
+            <span aria-hidden="true">＋</span>
+            <span>Agregar examen</span>
+          </button>
+        </div>
+      )}
 
       {showExamForm && (
         <form className="grid gap-4 rounded-xl border border-slate-200 p-4" onSubmit={onSubmit}>
@@ -167,7 +173,8 @@ export default function ExamenesView({
             <button
               type="button"
               onClick={onAddQuestion}
-              className="inline-flex w-full items-center justify-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 sm:w-auto"
+              disabled={preguntas.length >= MAX_QUESTIONS_PER_EXAM}
+              className="inline-flex w-full items-center justify-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto"
             >
               <span aria-hidden="true">＋</span>
               <span>Agregar pregunta</span>
@@ -188,18 +195,24 @@ export default function ExamenesView({
             </button>
           </div>
 
+          <p className="text-xs text-slate-500">
+            Preguntas: {preguntas.length}/{MAX_QUESTIONS_PER_EXAM}
+          </p>
+
           {examenMessage && <p className="text-sm text-slate-600">{examenMessage}</p>}
         </form>
       )}
 
-      <ExamenesDataTable
-        examenes={examenes}
-        loading={examenesLoading}
-        message={examenesMessage}
-        deletingExamId={deletingExamId ?? undefined}
-        onEdit={onEditExam}
-        onDelete={onDeleteExam}
-      />
+      {showExamList && (
+        <ExamenesDataTable
+          examenes={examenes}
+          loading={examenesLoading}
+          message={examenesMessage}
+          deletingExamId={deletingExamId ?? undefined}
+          onEdit={onEditExam}
+          onDelete={onDeleteExam}
+        />
+      )}
     </div>
   )
 }

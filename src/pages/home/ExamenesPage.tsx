@@ -16,6 +16,7 @@ type ExamenListado = {
 
 type Props = {
   showExamForm: boolean
+  showExamList: boolean
   editingExamId: string | null
   examenTitulo: string
   examenDescripcion: string
