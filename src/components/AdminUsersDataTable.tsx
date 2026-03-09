@@ -23,6 +23,10 @@ type Props = {
 }
 
 const pageSize = 8
+const sanitizeCsvCell = (value: string) => {
+  const text = String(value)
+  return /^[=+\-@]/.test(text) ? `'${text}` : text
+}
 
 export default function AdminUsersDataTable({
   users,
@@ -104,7 +108,13 @@ export default function AdminUsersDataTable({
 
   const handleExportCsv = () => {
     const headers = ['uid', 'nombre', 'email', 'rol', 'activo']
-    const rows = users.map((item) => [item.uid, item.nombre, item.email, item.rol, item.activo ? 'true' : 'false'])
+    const rows = users.map((item) => [
+      sanitizeCsvCell(item.uid),
+      sanitizeCsvCell(item.nombre),
+      sanitizeCsvCell(item.email),
+      sanitizeCsvCell(item.rol),
+      sanitizeCsvCell(item.activo ? 'true' : 'false'),
+    ])
     const csvContent = [headers, ...rows]
       .map((row) => row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(','))
       .join('\n')

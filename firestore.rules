@@ -15,25 +15,97 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
     }
 
+    function isValidRole(value) {
+      return value is string && (value == 'admin' || value == 'usuario');
+    }
+
+    function validUsuarioData(data, uid) {
+      return data.uid == uid
+        && data.nombre is string && data.nombre.size() <= 80
+        && data.email is string && data.email.size() <= 120
+        && data.activo is bool
+        && isValidRole(data.rol)
+        && data.keys().hasOnly([
+          'uid',
+          'nombre',
+          'email',
+          'activo',
+          'rol',
+          'createdAt',
+          'updatedAt'
+        ]);
+    }
+
+    function validExamenData(data) {
+      return data.titulo is string && data.titulo.size() > 0 && data.titulo.size() <= 120
+        && data.descripcion is string && data.descripcion.size() <= 500
+        && data.creadoPorUid is string && data.creadoPorUid.size() > 0
+        && data.creadoPorNombre is string && data.creadoPorNombre.size() <= 80
+        && data.creadoPorEmail is string && data.creadoPorEmail.size() <= 120
+        && data.totalPreguntas is int && data.totalPreguntas >= 1 && data.totalPreguntas <= 100
+        && data.activo is bool
+        && data.keys().hasOnly([
+          'titulo',
+          'descripcion',
+          'creadoPorUid',
+          'creadoPorNombre',
+          'creadoPorEmail',
+          'totalPreguntas',
+          'activo',
+          'createdAt',
+          'updatedAt'
+        ]);
+    }
+
+    function validPreguntaData(data) {
+      return data.texto is string && data.texto.size() > 0 && data.texto.size() <= 280
+        && data.correctaIndex is int && data.correctaIndex >= 0 && data.correctaIndex <= 3
+        && data.orden is int && data.orden >= 1 && data.orden <= 500
+        && data.respuestas is list
+        && data.respuestas.size() == 4
+        && data.respuestas[0] is string && data.respuestas[0].size() > 0 && data.respuestas[0].size() <= 180
+        && data.respuestas[1] is string && data.respuestas[1].size() > 0 && data.respuestas[1].size() <= 180
+        && data.respuestas[2] is string && data.respuestas[2].size() > 0 && data.respuestas[2].size() <= 180
+        && data.respuestas[3] is string && data.respuestas[3].size() > 0 && data.respuestas[3].size() <= 180
+        && data.keys().hasOnly(['texto', 'respuestas', 'correctaIndex', 'orden', 'createdAt']);
+    }
+
     match /usuarios/{uid} {
-      allow create: if isOwner(uid) || isAdmin();
+      allow create: if (isOwner(uid) || isAdmin())
+        && validUsuarioData(request.resource.data, uid)
+        && request.resource.data.uid == uid;
       allow get: if isOwner(uid) || isAdmin();
       allow list: if isAdmin();
-      allow update: if isOwner(uid) || isAdmin();
+      allow update: if validUsuarioData(request.resource.data, uid)
+        && (
+          isAdmin()
+          || (
+            isOwner(uid)
+            && request.resource.data.rol == resource.data.rol
+            && request.resource.data.activo == resource.data.activo
+          )
+        );
       allow delete: if isAdmin();
     }
 
     match /examenes/{examId} {
-      allow create: if signedIn();
+      allow create: if signedIn()
+        && validExamenData(request.resource.data)
+        && request.resource.data.creadoPorUid == request.auth.uid;
       allow get, list: if signedIn();
       allow update, delete: if signedIn()
+        && validExamenData(request.resource.data)
         && (
           isAdmin()
           || resource.data.creadoPorUid == request.auth.uid
-        );
+        )
+        && request.resource.data.creadoPorUid == resource.data.creadoPorUid
+        && request.resource.data.creadoPorEmail == resource.data.creadoPorEmail
+        && request.resource.data.createdAt == resource.data.createdAt;
 
       match /preguntas/{questionId} {
         allow create, update, delete: if signedIn()
+          && validPreguntaData(request.resource.data)
           && (
             isAdmin()
             || get(/databases/$(database)/documents/examenes/$(examId)).data.creadoPorUid == request.auth.uid

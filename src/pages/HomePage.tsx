@@ -41,6 +41,20 @@ type ExamenListado = {
   totalPreguntas: number
 }
 
+const LIMITS = {
+  profileName: 80,
+  examTitle: 120,
+  examDescription: 500,
+  questionText: 280,
+  answerText: 180,
+} as const
+
+const normalizeText = (value: string) => value.replace(/\s+/g, ' ').trim()
+const sanitizePlainText = (value: string, maxLength: number) =>
+  normalizeText(value)
+    .replace(/[<>]/g, '')
+    .slice(0, maxLength)
+
 export default function HomePage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -366,13 +380,20 @@ export default function HomePage() {
       setSaving(true)
       setStatusMessage('')
 
+      const safeNombre = sanitizePlainText(nombre, LIMITS.profileName)
+      if (!safeNombre) {
+        setStatusMessage('El nombre es obligatorio.')
+        return
+      }
+
       const userRef = doc(db, 'usuarios', currentUid)
       await updateDoc(userRef, {
-        nombre,
+        nombre: safeNombre,
         updatedAt: serverTimestamp(),
       })
 
-      setPerfil((prev) => (prev ? { ...prev, nombre } : prev))
+      setPerfil((prev) => (prev ? { ...prev, nombre: safeNombre } : prev))
+      setNombre(safeNombre)
       setEditing(false)
       setStatusMessage('Perfil actualizado correctamente.')
     } catch {
@@ -423,7 +444,10 @@ export default function HomePage() {
       return
     }
 
-    if (!examenTitulo.trim()) {
+    const safeTitulo = sanitizePlainText(examenTitulo, LIMITS.examTitle)
+    const safeDescripcion = sanitizePlainText(examenDescripcion, LIMITS.examDescription)
+
+    if (!safeTitulo) {
       setExamenMessage('Debes ingresar un título para el examen.')
       return
     }
@@ -433,8 +457,21 @@ export default function HomePage() {
       return
     }
 
-    const hasInvalidQuestion = preguntas.some(
-      (question) => !question.texto.trim() || question.respuestas.some((answer) => !answer.trim()),
+    const safePreguntas = preguntas.map((question) => ({
+      ...question,
+      texto: sanitizePlainText(question.texto, LIMITS.questionText),
+      respuestas: question.respuestas.map((answer) =>
+        sanitizePlainText(answer, LIMITS.answerText),
+      ) as [string, string, string, string],
+    }))
+
+    const hasInvalidQuestion = safePreguntas.some(
+      (question) =>
+        !question.texto ||
+        question.respuestas.length !== 4 ||
+        question.respuestas.some((answer) => !answer) ||
+        question.correctaIndex < 0 ||
+        question.correctaIndex > 3,
     )
 
     if (hasInvalidQuestion) {
@@ -449,12 +486,12 @@ export default function HomePage() {
         ? editingExamId
         : (
             await addDoc(collection(db, 'examenes'), {
-              titulo: examenTitulo.trim(),
-              descripcion: examenDescripcion.trim(),
+              titulo: safeTitulo,
+              descripcion: safeDescripcion,
               creadoPorUid: currentUid,
-              creadoPorNombre: perfil.nombre || perfil.email,
-              creadoPorEmail: perfil.email,
-              totalPreguntas: preguntas.length,
+              creadoPorNombre: sanitizePlainText(perfil.nombre || perfil.email, LIMITS.profileName),
+              creadoPorEmail: sanitizePlainText(perfil.email, 120),
+              totalPreguntas: safePreguntas.length,
               activo: true,
               createdAt: serverTimestamp(),
               updatedAt: serverTimestamp(),
@@ -463,9 +500,9 @@ export default function HomePage() {
 
       if (editingExamId) {
         await updateDoc(doc(db, 'examenes', examId), {
-          titulo: examenTitulo.trim(),
-          descripcion: examenDescripcion.trim(),
-          totalPreguntas: preguntas.length,
+          titulo: safeTitulo,
+          descripcion: safeDescripcion,
+          totalPreguntas: safePreguntas.length,
           updatedAt: serverTimestamp(),
         })
       }
@@ -478,11 +515,11 @@ export default function HomePage() {
         batch.delete(questionDoc.ref)
       })
 
-      preguntas.forEach((question, index) => {
+      safePreguntas.forEach((question, index) => {
         const questionRef = doc(questionCollectionRef)
         batch.set(questionRef, {
-          texto: question.texto.trim(),
-          respuestas: question.respuestas.map((answer) => answer.trim()),
+          texto: question.texto,
+          respuestas: question.respuestas,
           correctaIndex: question.correctaIndex,
           orden: index + 1,
           createdAt: serverTimestamp(),

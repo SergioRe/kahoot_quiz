@@ -94,3 +94,9 @@ Puedes generarlo localmente con:
 ```bash
 firebase login:ci
 ```
+
+## Pruebas manuales de seguridad
+
+Para validar inyección, reglas de Firestore y exportación CSV segura:
+
+- Ver guía: [docs/security-manual-tests.md](docs/security-manual-tests.md)
