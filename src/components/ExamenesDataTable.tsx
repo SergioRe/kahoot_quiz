@@ -57,7 +57,40 @@ export default function ExamenesDataTable({
         />
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="grid gap-3 md:hidden">
+        {loading ? (
+          <p className="rounded-lg border border-slate-200 px-3 py-4 text-sm text-slate-600">Cargando exámenes...</p>
+        ) : paged.length === 0 ? (
+          <p className="rounded-lg border border-slate-200 px-3 py-4 text-sm text-slate-600">No hay exámenes para mostrar.</p>
+        ) : (
+          paged.map((item) => (
+            <article key={item.id} className="rounded-lg border border-slate-200 p-3">
+              <p className="text-sm font-semibold text-slate-900">{item.titulo}</p>
+              <p className="mt-1 text-sm text-slate-700">{item.descripcion || '-'}</p>
+              <p className="mt-2 text-xs font-semibold text-slate-600">Preguntas: {item.totalPreguntas}</p>
+              <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => onEdit(item.id)}
+                  className="w-full rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700 sm:w-auto"
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void onDelete(item.id)}
+                  disabled={deletingExamId === item.id}
+                  className="w-full rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
+                >
+                  {deletingExamId === item.id ? 'Eliminando...' : 'Eliminar'}
+                </button>
+              </div>
+            </article>
+          ))
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto md:block">
         <table className="min-w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-600">
@@ -112,11 +145,11 @@ export default function ExamenesDataTable({
         </table>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-2">
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-xs text-slate-600">
           Mostrando {paged.length} de {filtered.length}
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             type="button"
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
