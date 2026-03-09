@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
@@ -68,6 +68,8 @@ export default function HomePage() {
   const [examenes, setExamenes] = useState<ExamenListado[]>([])
   const [examenesLoading, setExamenesLoading] = useState(false)
   const [examenesMessage, setExamenesMessage] = useState('')
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
+  const accountMenuRef = useRef<HTMLDivElement | null>(null)
 
   const themeStyles: Record<
     ColorTheme,
@@ -140,6 +142,18 @@ export default function HomePage() {
   useEffect(() => {
     localStorage.setItem('home-color-theme', colorTheme)
   }, [colorTheme])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!accountMenuRef.current) return
+      if (!accountMenuRef.current.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   const addQuestion = () => {
     setPreguntas((prev) => [...prev, { texto: '', respuestas: ['', '', '', ''], correctaIndex: 0 }])
@@ -565,6 +579,14 @@ export default function HomePage() {
   const activeRate = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0
   const inactiveRate = totalUsers > 0 ? Math.round((inactiveUsers / totalUsers) * 100) : 0
   const currentTheme = themeStyles[colorTheme]
+  const currentSectionLabel =
+    currentSection === 'inicio'
+      ? 'Inicio'
+      : currentSection === 'lista-examenes'
+        ? 'Exámenes'
+        : currentSection === 'perfil'
+          ? 'Perfil'
+          : 'Dashboard admin'
   const viewTitle =
     currentSection === 'inicio'
       ? 'Inicio'
@@ -578,7 +600,8 @@ export default function HomePage() {
     return (
       <main className={`flex min-h-screen items-center justify-center p-6 ${currentTheme.main}`}>
         <section className="w-full max-w-md rounded-2xl bg-white p-8 text-center shadow-2xl">
-          <p className="text-sm text-slate-600">Cargando perfil...</p>
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-slate-200 border-t-indigo-600" />
+          <p className="mt-4 text-base font-bold text-slate-900">Cargando {currentSectionLabel}...</p>
         </section>
       </main>
     )
@@ -609,7 +632,97 @@ export default function HomePage() {
       <section className={`w-full rounded-2xl p-4 shadow-2xl md:p-6 ${currentTheme.surface}`}>
         <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white/80 p-4">
-            <h1 className="text-xl font-bold text-slate-900">Panel</h1>
+            <div className="flex items-center justify-between gap-2">
+              <h1 className="text-xl font-bold text-slate-900">Panel</h1>
+
+              <div ref={accountMenuRef} className="relative w-auto">
+                <button
+                  type="button"
+                  onClick={() => setIsAccountMenuOpen((prev) => !prev)}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+                >
+                  <span>Mi cuenta</span>
+                  <span className="text-xs text-slate-500" aria-hidden="true">
+                    {isAccountMenuOpen ? '▴' : '▾'}
+                  </span>
+                </button>
+
+                {isAccountMenuOpen && (
+                  <div className="absolute left-0 top-full z-30 mt-2 grid w-[min(92vw,340px)] gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigate('/perfil')
+                      setIsAccountMenuOpen(false)
+                    }}
+                    className={`inline-flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${currentTheme.actionPrimary}`}
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-4 w-4"
+                    >
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                    </svg>
+                    <span>Editar datos del perfil</span>
+                  </button>
+
+                  <div className="rounded-lg border border-slate-300 bg-white px-3 py-2">
+                    <p className="text-xs font-semibold text-slate-600">Color del tema ({currentTheme.accent})</p>
+                    <div className="mt-2 flex items-center gap-2">
+                      {colorOptions.map((option) => {
+                        const isActive = colorTheme === option.key
+                        return (
+                          <div key={option.key} className="group relative">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setColorTheme(option.key)
+                                setIsAccountMenuOpen(false)
+                              }}
+                              aria-label={`Seleccionar tema ${option.label}`}
+                              className={`h-7 w-7 rounded-full border-2 transition ${
+                                isActive
+                                  ? 'border-slate-900 ring-2 ring-slate-300'
+                                  : 'border-slate-300 hover:border-slate-500'
+                              } ${option.key === 'blanco' ? 'shadow-inner' : ''} ${option.bgClass}`}
+                            />
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsAccountMenuOpen(false)
+                      handleLogout()
+                    }}
+                    className={`inline-flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${currentTheme.actionDanger}`}
+                  >
+                    <svg
+                      aria-hidden="true"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      className="h-4 w-4"
+                    >
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <path d="M16 17l5-5-5-5" />
+                      <path d="M21 12H9" />
+                    </svg>
+                    <span>Cerrar sesión</span>
+                  </button>
+                    </div>
+                  )}
+                </div>
+            </div>
             <p className="mt-1 text-xs text-slate-500">Bienvenido, {perfil.nombre || perfil.email}</p>
 
             <nav className="mt-5 grid gap-2">
@@ -649,85 +762,7 @@ export default function HomePage() {
 
           <section className="min-w-0 rounded-2xl border border-slate-200 bg-white/80 p-4 md:p-5">
             <header className="mb-5 border-b border-slate-200 pb-3">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                <h2 className="text-2xl font-bold text-slate-900">{viewTitle}</h2>
-
-                <details className="group relative ml-auto w-full lg:w-auto">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 lg:min-w-[180px]">
-                    <span>Mi cuenta</span>
-                    <span className="text-xs text-slate-500 group-open:hidden" aria-hidden="true">
-                      ▾
-                    </span>
-                    <span className="hidden text-xs text-slate-500 group-open:block" aria-hidden="true">
-                      ▴
-                    </span>
-                  </summary>
-
-                  <div className="pointer-events-none invisible absolute right-0 top-full z-30 mt-2 grid w-[min(92vw,340px)] gap-2 rounded-xl border border-slate-200 bg-white p-3 opacity-0 shadow-xl transition group-open:pointer-events-auto group-open:visible group-open:opacity-100">
-                    <button
-                      type="button"
-                      onClick={() => navigate('/perfil')}
-                      className={`inline-flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${currentTheme.actionPrimary}`}
-                    >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="h-4 w-4"
-                      >
-                        <path d="M12 20h9" />
-                        <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
-                      </svg>
-                      <span>Editar datos del perfil</span>
-                    </button>
-
-                    <div className="rounded-lg border border-slate-300 bg-white px-3 py-2">
-                      <p className="text-xs font-semibold text-slate-600">Color del tema ({currentTheme.accent})</p>
-                      <div className="mt-2 flex items-center gap-2">
-                        {colorOptions.map((option) => {
-                          const isActive = colorTheme === option.key
-                          return (
-                            <div key={option.key} className="group relative">
-                              <button
-                                type="button"
-                                onClick={() => setColorTheme(option.key)}
-                                aria-label={`Seleccionar tema ${option.label}`}
-                                className={`h-7 w-7 rounded-full border-2 transition ${
-                                  isActive
-                                    ? 'border-slate-900 ring-2 ring-slate-300'
-                                    : 'border-slate-300 hover:border-slate-500'
-                                } ${option.key === 'blanco' ? 'shadow-inner' : ''} ${option.bgClass}`}
-                              />
-                            </div>
-                          )
-                        })}
-                      </div>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleLogout}
-                      className={`inline-flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${currentTheme.actionDanger}`}
-                    >
-                      <svg
-                        aria-hidden="true"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="h-4 w-4"
-                      >
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                        <path d="M16 17l5-5-5-5" />
-                        <path d="M21 12H9" />
-                      </svg>
-                      <span>Cerrar sesión</span>
-                    </button>
-                  </div>
-                </details>
-              </div>
+              <h2 className="text-2xl font-bold text-slate-900">{viewTitle}</h2>
             </header>
 
             {currentSection === 'inicio' && <InicioPage />}
