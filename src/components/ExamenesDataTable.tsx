@@ -57,7 +57,7 @@ export default function ExamenesDataTable({
         />
       </div>
 
-      <div className="max-h-[26rem] overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
+      <div className="overflow-x-auto rounded-lg border border-slate-100">
         <table className="min-w-[760px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-600 bg-white">
