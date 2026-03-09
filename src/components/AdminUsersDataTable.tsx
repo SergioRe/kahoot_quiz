@@ -150,7 +150,7 @@ export default function AdminUsersDataTable({
           <button
             type="button"
             onClick={handleExportCsv}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100"
+            className="w-full rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:bg-slate-100 sm:w-auto"
           >
             Exportar CSV
           </button>
@@ -212,8 +212,8 @@ export default function AdminUsersDataTable({
           </select>
         </div>
 
-        <div className="mt-4 overflow-x-auto">
-          <table className="min-w-full text-left text-sm">
+        <div className="mt-4 max-h-[26rem] overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
+          <table className="min-w-[860px] text-left text-sm">
             <thead>
               <tr className="border-b border-slate-200 text-slate-600">
                 <th className="px-2 py-2 font-semibold">
@@ -301,11 +301,11 @@ export default function AdminUsersDataTable({
           </table>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs text-slate-600">
             Mostrando {pagedUsers.length} de {processedUsers.length} registros filtrados
           </p>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => goToPage(page - 1)}
