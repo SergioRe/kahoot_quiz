@@ -15,6 +15,12 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
     }
 
+    function userIsAdmin(uid) {
+      return uid is string
+        && exists(/databases/$(database)/documents/usuarios/$(uid))
+        && get(/databases/$(database)/documents/usuarios/$(uid)).data.rol == 'admin';
+    }
+
     function isValidRole(value) {
       return value is string && (value == 'admin' || value == 'usuario');
     }
@@ -42,7 +48,7 @@ service cloud.firestore {
         && data.creadoPorUid is string && data.creadoPorUid.size() > 0
         && data.creadoPorNombre is string && data.creadoPorNombre.size() <= 80
         && data.creadoPorEmail is string && data.creadoPorEmail.size() <= 120
-        && data.totalPreguntas is int && data.totalPreguntas >= 1 && data.totalPreguntas <= 100
+        && data.totalPreguntas is int && data.totalPreguntas >= 1 && data.totalPreguntas <= 5
         && data.activo is bool
         && data.keys().hasOnly([
           'titulo',
@@ -60,7 +66,7 @@ service cloud.firestore {
     function validPreguntaData(data) {
       return data.texto is string && data.texto.size() > 0 && data.texto.size() <= 280
         && data.correctaIndex is int && data.correctaIndex >= 0 && data.correctaIndex <= 3
-        && data.orden is int && data.orden >= 1 && data.orden <= 500
+        && data.orden is int && data.orden >= 1 && data.orden <= 5
         && data.respuestas is list
         && data.respuestas.size() == 4
         && data.respuestas[0] is string && data.respuestas[0].size() > 0 && data.respuestas[0].size() <= 180
@@ -68,6 +74,31 @@ service cloud.firestore {
         && data.respuestas[2] is string && data.respuestas[2].size() > 0 && data.respuestas[2].size() <= 180
         && data.respuestas[3] is string && data.respuestas[3].size() > 0 && data.respuestas[3].size() <= 180
         && data.keys().hasOnly(['texto', 'respuestas', 'correctaIndex', 'orden', 'createdAt']);
+    }
+
+    function validCalificacionData(data) {
+      return data.uid is string && data.uid.size() > 0
+        && data.nombre is string && data.nombre.size() <= 80
+        && data.email is string && data.email.size() <= 120
+        && data.examenId is string && data.examenId.size() > 0
+        && data.examenTitulo is string && data.examenTitulo.size() > 0 && data.examenTitulo.size() <= 120
+        && data.totalPreguntas is int && data.totalPreguntas >= 1 && data.totalPreguntas <= 5
+        && data.correctas is int && data.correctas >= 0 && data.correctas <= data.totalPreguntas
+        && data.incorrectas is int && data.incorrectas >= 0 && data.incorrectas <= data.totalPreguntas
+        && data.correctas + data.incorrectas == data.totalPreguntas
+        && data.porcentaje is int && data.porcentaje >= 0 && data.porcentaje <= 100
+        && data.keys().hasOnly([
+          'uid',
+          'nombre',
+          'email',
+          'examenId',
+          'examenTitulo',
+          'totalPreguntas',
+          'correctas',
+          'incorrectas',
+          'porcentaje',
+          'createdAt'
+        ]);
     }
 
     match /usuarios/{uid} {
@@ -92,7 +123,11 @@ service cloud.firestore {
       allow create: if signedIn()
         && validExamenData(request.resource.data)
         && request.resource.data.creadoPorUid == request.auth.uid;
-      allow get, list: if signedIn();
+      allow get, list: if signedIn()
+        && (
+          isAdmin()
+          || userIsAdmin(resource.data.creadoPorUid)
+        );
       allow update, delete: if signedIn()
         && validExamenData(request.resource.data)
         && (
@@ -110,8 +145,21 @@ service cloud.firestore {
             isAdmin()
             || get(/databases/$(database)/documents/examenes/$(examId)).data.creadoPorUid == request.auth.uid
           );
-        allow get, list: if signedIn();
+        allow get, list: if signedIn()
+          && (
+            isAdmin()
+            || userIsAdmin(get(/databases/$(database)/documents/examenes/$(examId)).data.creadoPorUid)
+          );
       }
+    }
+
+    match /calificaciones/{resultId} {
+      allow create: if signedIn()
+        && validCalificacionData(request.resource.data)
+        && request.resource.data.uid == request.auth.uid;
+      allow get, list: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update: if false;
+      allow delete: if isAdmin();
     }
   }
 }
