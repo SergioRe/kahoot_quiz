@@ -57,47 +57,14 @@ export default function ExamenesDataTable({
         />
       </div>
 
-      <div className="grid gap-3 md:hidden">
-        {loading ? (
-          <p className="rounded-lg border border-slate-200 px-3 py-4 text-sm text-slate-600">Cargando exámenes...</p>
-        ) : paged.length === 0 ? (
-          <p className="rounded-lg border border-slate-200 px-3 py-4 text-sm text-slate-600">No hay exámenes para mostrar.</p>
-        ) : (
-          paged.map((item) => (
-            <article key={item.id} className="rounded-lg border border-slate-200 p-3">
-              <p className="text-sm font-semibold text-slate-900">{item.titulo}</p>
-              <p className="mt-1 text-sm text-slate-700">{item.descripcion || '-'}</p>
-              <p className="mt-2 text-xs font-semibold text-slate-600">Preguntas: {item.totalPreguntas}</p>
-              <div className="mt-3 grid gap-2 sm:flex sm:flex-wrap">
-                <button
-                  type="button"
-                  onClick={() => onEdit(item.id)}
-                  className="w-full rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700 sm:w-auto"
-                >
-                  Editar
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void onDelete(item.id)}
-                  disabled={deletingExamId === item.id}
-                  className="w-full rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-                >
-                  {deletingExamId === item.id ? 'Eliminando...' : 'Eliminar'}
-                </button>
-              </div>
-            </article>
-          ))
-        )}
-      </div>
-
-      <div className="hidden overflow-x-auto md:block">
-        <table className="min-w-full text-left text-sm">
-          <thead>
-            <tr className="border-b border-slate-200 text-slate-600">
-              <th className="px-2 py-2 font-semibold">Nombre de examen</th>
-              <th className="px-2 py-2 font-semibold">Descripción</th>
-              <th className="px-2 py-2 font-semibold">Cantidad de preguntas</th>
-              <th className="px-2 py-2 font-semibold">Acciones</th>
+      <div className="overflow-x-auto overflow-y-auto rounded-lg border border-slate-100 max-h-[26rem]">
+        <table className="min-w-[760px] text-left text-sm">
+          <thead className="sticky top-0 z-10">
+            <tr className="border-b border-slate-200 text-slate-600 bg-white">
+              <th className="px-2 py-2 font-semibold whitespace-nowrap">Nombre de examen</th>
+              <th className="px-2 py-2 font-semibold whitespace-nowrap">Descripción</th>
+              <th className="px-2 py-2 font-semibold whitespace-nowrap">Cantidad de preguntas</th>
+              <th className="px-2 py-2 font-semibold whitespace-nowrap">Acciones</th>
             </tr>
           </thead>
           <tbody>
@@ -118,9 +85,9 @@ export default function ExamenesDataTable({
                 <tr key={item.id} className="border-b border-slate-100">
                   <td className="px-2 py-2 text-slate-800">{item.titulo}</td>
                   <td className="px-2 py-2 text-slate-700">{item.descripcion || '-'}</td>
-                  <td className="px-2 py-2 text-slate-700">{item.totalPreguntas}</td>
+                  <td className="px-2 py-2 text-slate-700 whitespace-nowrap">{item.totalPreguntas}</td>
                   <td className="px-2 py-2">
-                    <div className="flex flex-wrap gap-2">
+                    <div className="flex flex-wrap gap-2 whitespace-nowrap">
                       <button
                         type="button"
                         onClick={() => onEdit(item.id)}
