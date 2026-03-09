@@ -15,6 +15,17 @@ service cloud.firestore {
         && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.rol == 'admin';
     }
 
+    function canManageExams() {
+      return signedIn()
+        && (
+          isAdmin()
+          || (
+            exists(/databases/$(database)/documents/usuarios/$(request.auth.uid))
+            && get(/databases/$(database)/documents/usuarios/$(request.auth.uid)).data.puedeGestionarExamenes == true
+          )
+        );
+    }
+
     function userIsAdmin(uid) {
       return uid is string
         && exists(/databases/$(database)/documents/usuarios/$(uid))
@@ -31,12 +42,31 @@ service cloud.firestore {
         && data.email is string && data.email.size() <= 120
         && data.activo is bool
         && isValidRole(data.rol)
+        && data.puedeGestionarExamenes is bool
         && data.keys().hasOnly([
           'uid',
           'nombre',
           'email',
           'activo',
           'rol',
+          'puedeGestionarExamenes',
+          'createdAt',
+          'updatedAt'
+        ]);
+    }
+
+    function validSolicitudPermisoData(data) {
+      return data.uid is string && data.uid.size() > 0
+        && data.nombre is string && data.nombre.size() <= 80
+        && data.email is string && data.email.size() <= 120
+        && data.estado is string && (data.estado == 'pendiente' || data.estado == 'aprobada' || data.estado == 'rechazada')
+        && (!('revisadoPorUid' in data) || data.revisadoPorUid is string)
+        && data.keys().hasOnly([
+          'uid',
+          'nombre',
+          'email',
+          'estado',
+          'revisadoPorUid',
           'createdAt',
           'updatedAt'
         ]);
@@ -48,6 +78,8 @@ service cloud.firestore {
         && data.creadoPorUid is string && data.creadoPorUid.size() > 0
         && data.creadoPorNombre is string && data.creadoPorNombre.size() <= 80
         && data.creadoPorEmail is string && data.creadoPorEmail.size() <= 120
+        && data.estadoRevision is string && (data.estadoRevision == 'pendiente' || data.estadoRevision == 'aprobado' || data.estadoRevision == 'rechazado')
+        && data.revisadoPorUid is string && data.revisadoPorUid.size() <= 128
         && data.totalPreguntas is int && data.totalPreguntas >= 1 && data.totalPreguntas <= 5
         && data.activo is bool
         && data.keys().hasOnly([
@@ -56,6 +88,8 @@ service cloud.firestore {
           'creadoPorUid',
           'creadoPorNombre',
           'creadoPorEmail',
+          'estadoRevision',
+          'revisadoPorUid',
           'totalPreguntas',
           'activo',
           'createdAt',
@@ -118,32 +152,48 @@ service cloud.firestore {
             isOwner(uid)
             && request.resource.data.rol == resource.data.rol
             && request.resource.data.activo == resource.data.activo
+            && request.resource.data.puedeGestionarExamenes == resource.data.puedeGestionarExamenes
           )
         );
       allow delete: if isAdmin();
     }
 
     match /examenes/{examId} {
-      allow create: if signedIn()
+      allow create: if canManageExams()
         && validExamenData(request.resource.data)
-        && request.resource.data.creadoPorUid == request.auth.uid;
+        && request.resource.data.creadoPorUid == request.auth.uid
+        && (
+          isAdmin()
+          || (
+            request.resource.data.estadoRevision == 'pendiente'
+            && request.resource.data.revisadoPorUid == ''
+          )
+        );
       allow get, list: if signedIn()
         && (
           isAdmin()
-          || userIsAdmin(resource.data.creadoPorUid)
+          || resource.data.creadoPorUid == request.auth.uid
+          || resource.data.estadoRevision == 'aprobado'
         );
-      allow update, delete: if signedIn()
+      allow update, delete: if canManageExams()
         && validExamenData(request.resource.data)
         && (
           isAdmin()
           || resource.data.creadoPorUid == request.auth.uid
+        )
+        && (
+          isAdmin()
+          || (
+            request.resource.data.estadoRevision == 'pendiente'
+            && request.resource.data.revisadoPorUid == ''
+          )
         )
         && request.resource.data.creadoPorUid == resource.data.creadoPorUid
         && request.resource.data.creadoPorEmail == resource.data.creadoPorEmail
         && request.resource.data.createdAt == resource.data.createdAt;
 
       match /preguntas/{questionId} {
-        allow create, update, delete: if signedIn()
+        allow create, update, delete: if canManageExams()
           && validPreguntaData(request.resource.data)
           && (
             isAdmin()
@@ -152,9 +202,22 @@ service cloud.firestore {
         allow get, list: if signedIn()
           && (
             isAdmin()
-            || userIsAdmin(get(/databases/$(database)/documents/examenes/$(examId)).data.creadoPorUid)
+            || get(/databases/$(database)/documents/examenes/$(examId)).data.creadoPorUid == request.auth.uid
+            || get(/databases/$(database)/documents/examenes/$(examId)).data.estadoRevision == 'aprobado'
           );
       }
+    }
+
+    match /solicitudesPermisoExamenes/{requestId} {
+      allow create: if signedIn()
+        && validSolicitudPermisoData(request.resource.data)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.estado == 'pendiente';
+      allow get, list: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
+      allow update: if isAdmin()
+        && validSolicitudPermisoData(request.resource.data)
+        && request.resource.data.uid == resource.data.uid;
+      allow delete: if isAdmin();
     }
 
     match /calificaciones/{resultId} {

@@ -12,6 +12,7 @@ type ExamenListado = {
   titulo: string
   descripcion: string
   totalPreguntas: number
+  estadoRevision?: 'pendiente' | 'aprobado' | 'rechazado'
 }
 
 type Props = {
@@ -26,8 +27,12 @@ type Props = {
   examenes: ExamenListado[]
   examenesLoading: boolean
   examenesMessage: string
+  canManageExams: boolean
+  requestAccessMessage: string
+  requestingAccess: boolean
   deletingExamId: string | null
   onShowAdd: () => void
+  onRequestAccess: () => void
   onExamTitleChange: (value: string) => void
   onExamDescriptionChange: (value: string) => void
   onAddQuestion: () => void

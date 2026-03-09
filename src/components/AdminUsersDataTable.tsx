@@ -235,8 +235,8 @@ export default function AdminUsersDataTable({
           </select>
         </div>
 
-        <p className="mt-4 mb-2 text-[11px] font-semibold text-slate-500 sm:hidden">← Desliza para ver más columnas →</p>
-        <div className="table-scroll-area w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100 max-h-[26rem]">
+        <p className="mt-6 mb-2 text-[11px] font-semibold text-slate-500 sm:hidden">← Desliza para ver más columnas →</p>
+        <div className="mt-4 table-scroll-area w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100 max-h-[26rem]">
           <table className="min-w-[860px] w-full text-left text-sm">
             <thead>
               <tr className="themed-table-head border-b border-slate-200">

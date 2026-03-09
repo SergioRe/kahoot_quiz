@@ -2,7 +2,20 @@ import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { onAuthStateChanged, signOut } from 'firebase/auth'
-import { addDoc, collection, deleteDoc, doc, getDoc, getDocs, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
+import {
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+  where,
+  writeBatch,
+} from 'firebase/firestore'
 import { auth, db } from '../firebase'
 import InicioPage from './home/InicioPage'
 import PerfilPage from './home/PerfilPage'
@@ -25,6 +38,7 @@ type UsuarioPerfil = {
   email: string
   activo: boolean
   rol: UserRole
+  puedeGestionarExamenes: boolean
 }
 
 type UsuarioAdmin = {
@@ -33,6 +47,18 @@ type UsuarioAdmin = {
   email: string
   activo: boolean
   rol: UserRole
+  puedeGestionarExamenes: boolean
+}
+
+type EstadoSolicitudPermiso = 'pendiente' | 'aprobada' | 'rechazada'
+
+type SolicitudPermisoExamen = {
+  id: string
+  uid: string
+  nombre: string
+  email: string
+  estado: EstadoSolicitudPermiso
+  revisadoPorUid?: string
 }
 
 type ExamenListado = {
@@ -40,6 +66,17 @@ type ExamenListado = {
   titulo: string
   descripcion: string
   totalPreguntas: number
+  creadoPorUid?: string
+  creadoPorNombre?: string
+  estadoRevision?: 'pendiente' | 'aprobado' | 'rechazado'
+}
+
+type SolicitudAprobacionExamen = {
+  id: string
+  titulo: string
+  creadoPorUid: string
+  creadoPorNombre: string
+  estadoRevision: 'pendiente' | 'aprobado' | 'rechazado'
 }
 
 const LIMITS = {
@@ -85,6 +122,12 @@ export default function HomePage() {
   const [examenes, setExamenes] = useState<ExamenListado[]>([])
   const [examenesLoading, setExamenesLoading] = useState(false)
   const [examenesMessage, setExamenesMessage] = useState('')
+  const [requestingExamAccess, setRequestingExamAccess] = useState(false)
+  const [examAccessRequestMessage, setExamAccessRequestMessage] = useState('')
+  const [examAccessRequests, setExamAccessRequests] = useState<SolicitudPermisoExamen[]>([])
+  const [examAccessRequestsLoading, setExamAccessRequestsLoading] = useState(false)
+  const [examApprovalRequests, setExamApprovalRequests] = useState<SolicitudAprobacionExamen[]>([])
+  const [examApprovalRequestsLoading, setExamApprovalRequestsLoading] = useState(false)
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
   const accountMenuRef = useRef<HTMLDivElement | null>(null)
 
@@ -224,6 +267,11 @@ export default function HomePage() {
   }
 
   const handleStartAddExam = () => {
+    if (!perfil || !(perfil.rol === 'admin' || perfil.puedeGestionarExamenes)) {
+      setExamenesMessage('No tienes permisos para agregar exámenes. Solicita acceso al super admin.')
+      return
+    }
+
     resetExamForm()
     setExamenMessage('')
     setShowExamForm(true)
@@ -286,6 +334,12 @@ export default function HomePage() {
             titulo: data.titulo ?? 'Sin título',
             descripcion: data.descripcion ?? '',
             totalPreguntas: typeof data.totalPreguntas === 'number' ? data.totalPreguntas : 0,
+            creadoPorUid: data.creadoPorUid,
+            creadoPorNombre: data.creadoPorNombre,
+            estadoRevision:
+              data.estadoRevision === 'aprobado' || data.estadoRevision === 'rechazado' || data.estadoRevision === 'pendiente'
+                ? data.estadoRevision
+                : 'pendiente',
             isSeed: data.isSeed === true,
           }
         })
@@ -317,6 +371,7 @@ export default function HomePage() {
           email: user.email ?? '',
           activo: true,
           rol: 'usuario',
+          puedeGestionarExamenes: false,
         }
 
         await setDoc(userRef, {
@@ -335,11 +390,17 @@ export default function HomePage() {
       const data = userSnap.data() as Partial<UsuarioPerfil>
       const activo = typeof data.activo === 'boolean' ? data.activo : true
       const rol: UserRole = data.rol === 'admin' ? 'admin' : 'usuario'
+      const puedeGestionarExamenes = typeof data.puedeGestionarExamenes === 'boolean' ? data.puedeGestionarExamenes : false
 
-      if (typeof data.activo !== 'boolean' || typeof data.rol !== 'string') {
+      if (
+        typeof data.activo !== 'boolean' ||
+        typeof data.rol !== 'string' ||
+        typeof data.puedeGestionarExamenes !== 'boolean'
+      ) {
         await updateDoc(userRef, {
           activo,
           rol,
+          puedeGestionarExamenes,
           updatedAt: serverTimestamp(),
         })
       }
@@ -349,6 +410,7 @@ export default function HomePage() {
         email: data.email ?? user.email ?? '',
         activo,
         rol,
+        puedeGestionarExamenes,
       }
 
       setPerfil(profile)
@@ -378,6 +440,7 @@ export default function HomePage() {
             email: data.email ?? '',
             activo: typeof data.activo === 'boolean' ? data.activo : true,
             rol,
+            puedeGestionarExamenes: typeof data.puedeGestionarExamenes === 'boolean' ? data.puedeGestionarExamenes : false,
           }
         })
 
@@ -390,6 +453,77 @@ export default function HomePage() {
     }
 
     void loadUsers()
+  }, [perfil, currentSection])
+
+  useEffect(() => {
+    const loadExamAccessRequests = async () => {
+      if (!perfil || perfil.rol !== 'admin' || currentSection !== 'dashboard') {
+        setExamAccessRequests([])
+        return
+      }
+
+      try {
+        setExamAccessRequestsLoading(true)
+        const snapshot = await getDocs(collection(db, 'solicitudesPermisoExamenes'))
+        const requests = snapshot.docs
+          .map((docItem) => {
+            const data = docItem.data() as Partial<SolicitudPermisoExamen>
+            return {
+              id: docItem.id,
+              uid: data.uid ?? '',
+              nombre: data.nombre ?? '',
+              email: data.email ?? '',
+              estado:
+                data.estado === 'aprobada' || data.estado === 'rechazada' || data.estado === 'pendiente'
+                  ? data.estado
+                  : 'pendiente',
+              revisadoPorUid: data.revisadoPorUid,
+            }
+          })
+          .filter((item) => item.uid)
+
+        setExamAccessRequests(requests)
+      } catch {
+        setAdminMessage('No se pudieron cargar las solicitudes de permisos de exámenes.')
+      } finally {
+        setExamAccessRequestsLoading(false)
+      }
+    }
+
+    void loadExamAccessRequests()
+  }, [perfil, currentSection])
+
+  useEffect(() => {
+    const loadExamApprovalRequests = async () => {
+      if (!perfil || perfil.rol !== 'admin' || currentSection !== 'dashboard') {
+        setExamApprovalRequests([])
+        return
+      }
+
+      try {
+        setExamApprovalRequestsLoading(true)
+        const pendingExamsQuery = query(collection(db, 'examenes'), where('estadoRevision', '==', 'pendiente'))
+        const snapshot = await getDocs(pendingExamsQuery)
+        const requests = snapshot.docs.map((docItem) => {
+          const data = docItem.data() as Partial<ExamenListado>
+          return {
+            id: docItem.id,
+            titulo: data.titulo ?? 'Sin título',
+            creadoPorUid: data.creadoPorUid ?? '',
+            creadoPorNombre: data.creadoPorNombre ?? 'Usuario',
+            estadoRevision: 'pendiente' as const,
+          }
+        })
+
+        setExamApprovalRequests(requests)
+      } catch {
+        setAdminMessage('No se pudieron cargar las solicitudes de aprobación de exámenes.')
+      } finally {
+        setExamApprovalRequestsLoading(false)
+      }
+    }
+
+    void loadExamApprovalRequests()
   }, [perfil, currentSection])
 
   useEffect(() => {
@@ -480,6 +614,11 @@ export default function HomePage() {
       return
     }
 
+    if (!(perfil.rol === 'admin' || perfil.puedeGestionarExamenes)) {
+      setExamenMessage('No tienes permisos para gestionar exámenes. Solicita acceso al super admin.')
+      return
+    }
+
     const safeTitulo = sanitizePlainText(examenTitulo, LIMITS.examTitle)
     const safeDescripcion = sanitizePlainText(examenDescripcion, LIMITS.examDescription)
 
@@ -532,6 +671,8 @@ export default function HomePage() {
               creadoPorUid: currentUid,
               creadoPorNombre: sanitizePlainText(perfil.nombre || perfil.email, LIMITS.profileName),
               creadoPorEmail: sanitizePlainText(perfil.email, 120),
+              estadoRevision: perfil.rol === 'admin' ? 'aprobado' : 'pendiente',
+              revisadoPorUid: perfil.rol === 'admin' ? currentUid : '',
               totalPreguntas: safePreguntas.length,
               activo: true,
               createdAt: serverTimestamp(),
@@ -543,6 +684,8 @@ export default function HomePage() {
         await updateDoc(doc(db, 'examenes', examId), {
           titulo: safeTitulo,
           descripcion: safeDescripcion,
+          estadoRevision: perfil.rol === 'admin' ? 'aprobado' : 'pendiente',
+          revisadoPorUid: perfil.rol === 'admin' ? currentUid : '',
           totalPreguntas: safePreguntas.length,
           updatedAt: serverTimestamp(),
         })
@@ -568,7 +711,15 @@ export default function HomePage() {
       })
 
       await batch.commit()
-      setExamenMessage(editingExamId ? 'Examen actualizado correctamente.' : 'Examen guardado correctamente.')
+      setExamenMessage(
+        perfil.rol === 'admin'
+          ? editingExamId
+            ? 'Examen actualizado y aprobado correctamente.'
+            : 'Examen guardado y aprobado correctamente.'
+          : editingExamId
+            ? 'Examen actualizado. Quedó pendiente de aprobación del super admin.'
+            : 'Examen guardado. Quedó pendiente de aprobación del super admin.',
+      )
       resetExamForm()
       setShowExamForm(false)
       navigate('/examenes')
@@ -583,6 +734,11 @@ export default function HomePage() {
   }
 
   const handleEditExam = async (examId: string) => {
+    if (!perfil || !(perfil.rol === 'admin' || perfil.puedeGestionarExamenes)) {
+      setExamenesMessage('No tienes permisos para editar exámenes. Solicita acceso al super admin.')
+      return
+    }
+
     try {
       setExamenesMessage('')
       const examDoc = await getDoc(doc(db, 'examenes', examId))
@@ -626,6 +782,11 @@ export default function HomePage() {
   }
 
   const handleDeleteExam = async (examId: string) => {
+    if (!perfil || !(perfil.rol === 'admin' || perfil.puedeGestionarExamenes)) {
+      setExamenesMessage('No tienes permisos para eliminar exámenes. Solicita acceso al super admin.')
+      return
+    }
+
     try {
       setDeletingExamId(examId)
       setExamenesMessage('')
@@ -657,6 +818,107 @@ export default function HomePage() {
   const activeRate = totalUsers > 0 ? Math.round((activeUsers / totalUsers) * 100) : 0
   const inactiveRate = totalUsers > 0 ? Math.round((inactiveUsers / totalUsers) * 100) : 0
   const currentTheme = themeStyles[colorTheme]
+  const canManageExams = perfil?.rol === 'admin' || perfil?.puedeGestionarExamenes === true
+
+  const handleRequestExamAccess = async () => {
+    if (!perfil || !currentUid) {
+      return
+    }
+
+    if (perfil.rol === 'admin' || perfil.puedeGestionarExamenes) {
+      setExamAccessRequestMessage('Ya tienes permisos para gestionar exámenes.')
+      return
+    }
+
+    try {
+      setRequestingExamAccess(true)
+      setExamAccessRequestMessage('')
+
+      const pendingQuery = query(
+        collection(db, 'solicitudesPermisoExamenes'),
+        where('uid', '==', currentUid),
+        where('estado', '==', 'pendiente'),
+      )
+      const pendingSnapshot = await getDocs(pendingQuery)
+
+      if (!pendingSnapshot.empty) {
+        setExamAccessRequestMessage('Ya tienes una solicitud pendiente de revisión.')
+        return
+      }
+
+      await addDoc(collection(db, 'solicitudesPermisoExamenes'), {
+        uid: currentUid,
+        nombre: sanitizePlainText(perfil.nombre || perfil.email, LIMITS.profileName),
+        email: sanitizePlainText(perfil.email, 120),
+        estado: 'pendiente',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      })
+
+      setExamAccessRequestMessage('Solicitud enviada al super admin correctamente.')
+    } catch {
+      setExamAccessRequestMessage('No se pudo enviar la solicitud. Inténtalo nuevamente.')
+    } finally {
+      setRequestingExamAccess(false)
+    }
+  }
+
+  const handleResolveExamAccessRequest = async (requestId: string, userId: string, approve: boolean) => {
+    if (!perfil || perfil.rol !== 'admin') {
+      return
+    }
+
+    try {
+      setAdminMessage('')
+      await updateDoc(doc(db, 'solicitudesPermisoExamenes', requestId), {
+        estado: approve ? 'aprobada' : 'rechazada',
+        revisadoPorUid: currentUid,
+        updatedAt: serverTimestamp(),
+      })
+
+      if (approve) {
+        await updateDoc(doc(db, 'usuarios', userId), {
+          puedeGestionarExamenes: true,
+          updatedAt: serverTimestamp(),
+        })
+      }
+
+      setExamAccessRequests((prev) =>
+        prev.map((item) => (item.id === requestId ? { ...item, estado: approve ? 'aprobada' : 'rechazada', revisadoPorUid: currentUid } : item)),
+      )
+
+      if (approve) {
+        setAdminUsers((prev) =>
+          prev.map((item) => (item.uid === userId ? { ...item, puedeGestionarExamenes: true } : item)),
+        )
+      }
+    } catch {
+      setAdminMessage('No se pudo actualizar la solicitud de permiso.')
+    }
+  }
+
+  const handleResolveExamApprovalRequest = async (examId: string, approve: boolean) => {
+    if (!perfil || perfil.rol !== 'admin') {
+      return
+    }
+
+    try {
+      setAdminMessage('')
+      await updateDoc(doc(db, 'examenes', examId), {
+        estadoRevision: approve ? 'aprobado' : 'rechazado',
+        revisadoPorUid: currentUid,
+        updatedAt: serverTimestamp(),
+      })
+
+      setExamApprovalRequests((prev) => prev.filter((item) => item.id !== examId))
+
+      if (currentSection === 'lista-examenes') {
+        await fetchExamenes()
+      }
+    } catch {
+      setAdminMessage('No se pudo actualizar la aprobación del examen.')
+    }
+  }
   const currentSectionLabel =
     currentSection === 'inicio'
       ? 'Rendir examen'
@@ -913,8 +1175,16 @@ export default function HomePage() {
                 adminLoading={adminLoading}
                 adminMessage={adminMessage}
                 currentUid={currentUid}
+                examAccessRequests={examAccessRequests}
+                examAccessRequestsLoading={examAccessRequestsLoading}
+                examApprovalRequests={examApprovalRequests}
+                examApprovalRequestsLoading={examApprovalRequestsLoading}
                 onToggleActivo={handleToggleActivo}
                 onToggleRol={handleToggleRol}
+                onApproveExamAccess={(requestId, userId) => handleResolveExamAccessRequest(requestId, userId, true)}
+                onRejectExamAccess={(requestId, userId) => handleResolveExamAccessRequest(requestId, userId, false)}
+                onApproveExam={(examId) => handleResolveExamApprovalRequest(examId, true)}
+                onRejectExam={(examId) => handleResolveExamApprovalRequest(examId, false)}
               />
             )}
 
@@ -931,8 +1201,12 @@ export default function HomePage() {
                 examenes={examenes}
                 examenesLoading={examenesLoading}
                 examenesMessage={examenesMessage}
+                canManageExams={canManageExams}
+                requestAccessMessage={examAccessRequestMessage}
+                requestingAccess={requestingExamAccess}
                 deletingExamId={deletingExamId}
                 onShowAdd={handleStartAddExam}
+                onRequestAccess={handleRequestExamAccess}
                 onExamTitleChange={setExamenTitulo}
                 onExamDescriptionChange={setExamenDescripcion}
                 onAddQuestion={addQuestion}

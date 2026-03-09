@@ -12,6 +12,7 @@ type ExamenListado = {
   titulo: string
   descripcion: string
   totalPreguntas: number
+  estadoRevision?: 'pendiente' | 'aprobado' | 'rechazado'
 }
 
 type Props = {
@@ -26,8 +27,12 @@ type Props = {
   examenes: ExamenListado[]
   examenesLoading: boolean
   examenesMessage: string
+  canManageExams: boolean
+  requestAccessMessage: string
+  requestingAccess: boolean
   deletingExamId: string | null
   onShowAdd: () => void
+  onRequestAccess: () => void
   onExamTitleChange: (value: string) => void
   onExamDescriptionChange: (value: string) => void
   onAddQuestion: () => void
@@ -55,8 +60,12 @@ export default function ExamenesView({
   examenes,
   examenesLoading,
   examenesMessage,
+  canManageExams,
+  requestAccessMessage,
+  requestingAccess,
   deletingExamId,
   onShowAdd,
+  onRequestAccess,
   onExamTitleChange,
   onExamDescriptionChange,
   onAddQuestion,
@@ -71,7 +80,7 @@ export default function ExamenesView({
 }: Props) {
   return (
     <div className="grid gap-4">
-      {showExamList && (
+      {showExamList && canManageExams && (
         <div className="flex flex-col items-start justify-between gap-2 sm:flex-row sm:items-center">
           <h3 className="text-sm font-semibold text-slate-700">Gestión de exámenes</h3>
           <button
@@ -85,7 +94,29 @@ export default function ExamenesView({
         </div>
       )}
 
-      {showExamForm && (
+      {showExamList && !canManageExams && (
+        <section className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+          <h3 className="text-sm font-semibold text-slate-900">Permiso requerido</h3>
+          <p className="mt-1 text-sm text-slate-600">
+            Necesitas aprobación del super admin para agregar, editar o eliminar exámenes.
+          </p>
+          <button
+            type="button"
+            onClick={onRequestAccess}
+            disabled={requestingAccess}
+            className="mt-3 inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+            <span>{requestingAccess ? 'Enviando...' : 'Solicitar permiso'}</span>
+          </button>
+          {requestAccessMessage && <p className="mt-2 text-sm text-slate-600">{requestAccessMessage}</p>}
+        </section>
+      )}
+
+      {showExamForm && canManageExams && (
         <form className="grid gap-4 rounded-xl border border-slate-200 p-4" onSubmit={onSubmit}>
           <div className="grid gap-2">
             <label htmlFor="examTitle" className="text-sm font-semibold text-slate-700">
@@ -208,6 +239,7 @@ export default function ExamenesView({
           examenes={examenes}
           loading={examenesLoading}
           message={examenesMessage}
+          showActions={canManageExams}
           deletingExamId={deletingExamId ?? undefined}
           onEdit={onEditExam}
           onDelete={onDeleteExam}

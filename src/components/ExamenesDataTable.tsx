@@ -5,12 +5,14 @@ type ExamenListado = {
   titulo: string
   descripcion: string
   totalPreguntas: number
+  estadoRevision?: 'pendiente' | 'aprobado' | 'rechazado'
 }
 
 type Props = {
   examenes: ExamenListado[]
   loading: boolean
   message: string
+  showActions?: boolean
   deletingExamId?: string
   onEdit: (examId: string) => void
   onDelete: (examId: string) => Promise<void>
@@ -22,6 +24,7 @@ export default function ExamenesDataTable({
   examenes,
   loading,
   message,
+  showActions = true,
   deletingExamId,
   onEdit,
   onDelete,
@@ -78,19 +81,20 @@ export default function ExamenesDataTable({
               <th className="px-2 py-2 font-bold">Nombre de examen</th>
               <th className="px-2 py-2 font-bold">Descripción</th>
               <th className="px-2 py-2 font-bold">Cantidad de preguntas</th>
-              <th className="px-2 py-2 font-bold">Acciones</th>
+              <th className="px-2 py-2 font-bold">Estado</th>
+              {showActions && <th className="px-2 py-2 font-bold">Acciones</th>}
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={4} className="px-2 py-4 text-slate-600">
+                <td colSpan={showActions ? 5 : 4} className="px-2 py-4 text-slate-600">
                   Cargando exámenes...
                 </td>
               </tr>
             ) : paged.length === 0 ? (
               <tr>
-                <td colSpan={4} className="px-2 py-4 text-slate-600">
+                <td colSpan={showActions ? 5 : 4} className="px-2 py-4 text-slate-600">
                   No hay exámenes para mostrar.
                 </td>
               </tr>
@@ -101,49 +105,64 @@ export default function ExamenesDataTable({
                   <td className="px-2 py-2 text-slate-700">{item.descripcion || '-'}</td>
                   <td className="px-2 py-2 text-slate-700">{item.totalPreguntas}</td>
                   <td className="px-2 py-2">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={() => onEdit(item.id)}
-                        className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          className="h-3.5 w-3.5"
-                        >
-                          <path d="M12 20h9" />
-                          <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
-                        </svg>
-                        <span>Editar</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void onDelete(item.id)}
-                        disabled={deletingExamId === item.id}
-                        className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        <svg
-                          aria-hidden="true"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          className="h-3.5 w-3.5"
-                        >
-                          <path d="M3 6h18" />
-                          <path d="M8 6V4h8v2" />
-                          <path d="M19 6l-1 14H6L5 6" />
-                          <path d="M10 11v6" />
-                          <path d="M14 11v6" />
-                        </svg>
-                        <span>{deletingExamId === item.id ? 'Eliminando...' : 'Eliminar'}</span>
-                      </button>
-                    </div>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                        item.estadoRevision === 'aprobado'
+                          ? 'bg-emerald-100 text-emerald-700'
+                          : item.estadoRevision === 'rechazado'
+                            ? 'bg-rose-100 text-rose-700'
+                            : 'bg-amber-100 text-amber-700'
+                      }`}
+                    >
+                      {item.estadoRevision ?? 'pendiente'}
+                    </span>
                   </td>
+                  {showActions && (
+                    <td className="px-2 py-2">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => onEdit(item.id)}
+                          className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="h-3.5 w-3.5"
+                          >
+                            <path d="M12 20h9" />
+                            <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                          </svg>
+                          <span>Editar</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void onDelete(item.id)}
+                          disabled={deletingExamId === item.id}
+                          className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          <svg
+                            aria-hidden="true"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            className="h-3.5 w-3.5"
+                          >
+                            <path d="M3 6h18" />
+                            <path d="M8 6V4h8v2" />
+                            <path d="M19 6l-1 14H6L5 6" />
+                            <path d="M10 11v6" />
+                            <path d="M14 11v6" />
+                          </svg>
+                          <span>{deletingExamId === item.id ? 'Eliminando...' : 'Eliminar'}</span>
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               ))
             )}
