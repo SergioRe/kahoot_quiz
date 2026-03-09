@@ -69,36 +69,49 @@ export default function HomePage() {
   const [examenesLoading, setExamenesLoading] = useState(false)
   const [examenesMessage, setExamenesMessage] = useState('')
 
-  const themeStyles: Record<ColorTheme, { main: string; surface: string; accent: string; menuActive: string }> = {
+  const themeStyles: Record<
+    ColorTheme,
+    { main: string; surface: string; accent: string; menuActive: string; actionPrimary: string; actionDanger: string }
+  > = {
     azul: {
       main: 'bg-gradient-to-b from-blue-300 via-blue-500 to-indigo-900',
       surface: 'bg-white',
       accent: 'Azul',
       menuActive: 'bg-blue-600 text-white',
+      actionPrimary: 'bg-blue-600 text-white hover:bg-blue-700',
+      actionDanger: 'bg-indigo-600 text-white hover:bg-indigo-700',
     },
     morado: {
       main: 'bg-gradient-to-b from-violet-300 via-purple-500 to-fuchsia-900',
       surface: 'bg-violet-50',
       accent: 'Morado',
       menuActive: 'bg-violet-600 text-white',
+      actionPrimary: 'bg-violet-600 text-white hover:bg-violet-700',
+      actionDanger: 'bg-fuchsia-600 text-white hover:bg-fuchsia-700',
     },
     emerald: {
       main: 'bg-gradient-to-b from-emerald-200 via-teal-500 to-cyan-900',
       surface: 'bg-emerald-50',
       accent: 'Verde',
       menuActive: 'bg-emerald-600 text-white',
+      actionPrimary: 'bg-emerald-600 text-white hover:bg-emerald-700',
+      actionDanger: 'bg-teal-600 text-white hover:bg-teal-700',
     },
     negro: {
       main: 'bg-gradient-to-b from-slate-600 via-slate-800 to-black',
       surface: 'bg-slate-100',
       accent: 'Negro',
       menuActive: 'bg-slate-900 text-white',
+      actionPrimary: 'bg-slate-900 text-white hover:bg-black',
+      actionDanger: 'bg-slate-700 text-white hover:bg-slate-800',
     },
     blanco: {
       main: 'bg-gradient-to-b from-white via-slate-100 to-slate-300',
       surface: 'bg-white',
       accent: 'Blanco',
       menuActive: 'bg-slate-200 text-slate-900',
+      actionPrimary: 'bg-slate-200 text-slate-900 hover:bg-slate-300',
+      actionDanger: 'bg-slate-500 text-white hover:bg-slate-600',
     },
   }
 
@@ -611,15 +624,6 @@ export default function HomePage() {
               </button>
               <button
                 type="button"
-                onClick={() => navigate('/perfil')}
-                className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  currentSection === 'perfil' ? currentTheme.menuActive : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Editar datos del perfil
-              </button>
-              <button
-                type="button"
                 onClick={() => navigate('/examenes')}
                 className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
                   currentSection === 'lista-examenes'
@@ -641,47 +645,89 @@ export default function HomePage() {
                 Dashboard admin
               </button>
             </nav>
-
-            <div className="mt-6 grid gap-2">
-              <div className="rounded-lg border border-slate-300 bg-white px-3 py-2">
-                <p className="text-xs font-semibold text-slate-600">Color del tema ({currentTheme.accent})</p>
-                <div className="mt-2 flex items-center gap-2">
-                  {colorOptions.map((option) => {
-                    const isActive = colorTheme === option.key
-                    return (
-                      <div key={option.key} className="group relative">
-                        <button
-                          type="button"
-                          onClick={() => setColorTheme(option.key)}
-                          title={option.label}
-                          aria-label={`Seleccionar tema ${option.label}`}
-                          className={`h-7 w-7 rounded-full border-2 transition ${
-                            isActive
-                              ? 'border-slate-900 ring-2 ring-slate-300'
-                              : 'border-slate-300 hover:border-slate-500'
-                          } ${option.key === 'blanco' ? 'shadow-inner' : ''} ${option.bgClass}`}
-                        />
-                        <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 rounded bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
-                          {option.label}
-                        </span>
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="w-full rounded-lg bg-gradient-to-r from-indigo-600 to-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:brightness-105"
-              >
-                Cerrar sesión
-              </button>
-            </div>
           </aside>
 
           <section className="min-w-0 rounded-2xl border border-slate-200 bg-white/80 p-4 md:p-5">
             <header className="mb-5 border-b border-slate-200 pb-3">
-              <h2 className="text-2xl font-bold text-slate-900">{viewTitle}</h2>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                <h2 className="text-2xl font-bold text-slate-900">{viewTitle}</h2>
+
+                <details className="group relative ml-auto w-full lg:w-auto">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 lg:min-w-[180px]">
+                    <span>Mi cuenta</span>
+                    <span className="text-xs text-slate-500 group-open:hidden" aria-hidden="true">
+                      ▾
+                    </span>
+                    <span className="hidden text-xs text-slate-500 group-open:block" aria-hidden="true">
+                      ▴
+                    </span>
+                  </summary>
+
+                  <div className="pointer-events-none invisible absolute right-0 top-full z-30 mt-2 grid w-[min(92vw,340px)] gap-2 rounded-xl border border-slate-200 bg-white p-3 opacity-0 shadow-xl transition group-open:pointer-events-auto group-open:visible group-open:opacity-100">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/perfil')}
+                      className={`inline-flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${currentTheme.actionPrimary}`}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="h-4 w-4"
+                      >
+                        <path d="M12 20h9" />
+                        <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                      </svg>
+                      <span>Editar datos del perfil</span>
+                    </button>
+
+                    <div className="rounded-lg border border-slate-300 bg-white px-3 py-2">
+                      <p className="text-xs font-semibold text-slate-600">Color del tema ({currentTheme.accent})</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        {colorOptions.map((option) => {
+                          const isActive = colorTheme === option.key
+                          return (
+                            <div key={option.key} className="group relative">
+                              <button
+                                type="button"
+                                onClick={() => setColorTheme(option.key)}
+                                aria-label={`Seleccionar tema ${option.label}`}
+                                className={`h-7 w-7 rounded-full border-2 transition ${
+                                  isActive
+                                    ? 'border-slate-900 ring-2 ring-slate-300'
+                                    : 'border-slate-300 hover:border-slate-500'
+                                } ${option.key === 'blanco' ? 'shadow-inner' : ''} ${option.bgClass}`}
+                              />
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleLogout}
+                      className={`inline-flex items-center gap-1 rounded-lg px-4 py-2 text-sm font-semibold transition ${currentTheme.actionDanger}`}
+                    >
+                      <svg
+                        aria-hidden="true"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="h-4 w-4"
+                      >
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                        <path d="M16 17l5-5-5-5" />
+                        <path d="M21 12H9" />
+                      </svg>
+                      <span>Cerrar sesión</span>
+                    </button>
+                  </div>
+                </details>
+              </div>
             </header>
 
             {currentSection === 'inicio' && <InicioPage />}
