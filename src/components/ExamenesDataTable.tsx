@@ -57,7 +57,8 @@ export default function ExamenesDataTable({
         />
       </div>
 
-      <div className="max-h-[26rem] w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
+      <p className="mb-2 text-[11px] font-semibold text-slate-500 sm:hidden">← Desliza para ver más columnas →</p>
+      <div className="table-scroll-area max-h-[26rem] w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
         <table className="min-w-[760px] w-full text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-slate-600 bg-white">
@@ -116,23 +117,23 @@ export default function ExamenesDataTable({
         <p className="text-xs text-slate-600">
           Mostrando {paged.length} de {filtered.length}
         </p>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-nowrap items-center gap-1 overflow-x-auto text-[11px] sm:gap-2 sm:text-xs">
           <button
             type="button"
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
             disabled={safePage <= 1}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-slate-300 px-2 py-1 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:py-1.5"
           >
             Anterior
           </button>
-          <span className="text-xs font-semibold text-slate-700">
-            Página {safePage} de {totalPages}
+          <span className="whitespace-nowrap font-semibold text-slate-700">
+            Página {safePage}/{totalPages}
           </span>
           <button
             type="button"
             onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={safePage >= totalPages}
-            className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded-lg border border-slate-300 px-2 py-1 font-semibold text-slate-700 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3 sm:py-1.5"
           >
             Siguiente
           </button>
