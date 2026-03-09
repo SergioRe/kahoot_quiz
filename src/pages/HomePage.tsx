@@ -572,8 +572,8 @@ export default function HomePage() {
   return (
     <main className={`min-h-screen p-4 md:p-6 ${currentTheme.main}`}>
       <section className={`w-full rounded-2xl p-4 shadow-2xl md:p-6 ${currentTheme.surface}`}>
-        <div className="grid gap-4 lg:grid-cols-[260px_1fr]">
-          <aside className="rounded-2xl border border-slate-200 bg-white/80 p-4">
+        <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
+          <aside className="h-fit rounded-2xl border border-slate-200 bg-white/80 p-4">
             <h1 className="text-xl font-bold text-slate-900">Panel</h1>
             <p className="mt-1 text-xs text-slate-500">Bienvenido, {perfil.nombre || perfil.email}</p>
 
@@ -581,7 +581,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => navigate('/inicio')}
-                className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
+                className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
                   currentSection === 'inicio' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -590,7 +590,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => navigate('/perfil')}
-                className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
+                className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
                   currentSection === 'perfil' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -599,7 +599,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => navigate('/examenes')}
-                className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
+                className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
                   currentSection === 'lista-examenes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -608,7 +608,7 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={() => navigate('/dashboard')}
-                className={`rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
+                className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
                   currentSection === 'dashboard' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
@@ -634,7 +634,7 @@ export default function HomePage() {
             </div>
           </aside>
 
-          <section className="rounded-2xl border border-slate-200 bg-white/80 p-4 md:p-5">
+          <section className="min-w-0 rounded-2xl border border-slate-200 bg-white/80 p-4 md:p-5">
             <header className="mb-5 border-b border-slate-200 pb-3">
               <h2 className="text-2xl font-bold text-slate-900">{viewTitle}</h2>
             </header>

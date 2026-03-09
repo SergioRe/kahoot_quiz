@@ -72,7 +72,7 @@ export default function ExamenesView({
         <button
           type="button"
           onClick={onShowAdd}
-          className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 sm:w-auto"
+          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
         >
           Agregar examen
         </button>
