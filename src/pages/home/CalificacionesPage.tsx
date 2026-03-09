@@ -10,8 +10,16 @@ type CalificacionItem = {
   correctas: number
   incorrectas: number
   porcentaje: number
+  tiempoTexto: string
   fechaLabel: string
   timestampMs: number
+}
+
+const formatElapsedTime = (seconds: number) => {
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+  return [hours, minutes, secs].map((value) => String(value).padStart(2, '0')).join(':')
 }
 
 type Props = {
@@ -44,6 +52,8 @@ export default function CalificacionesPage({ currentUid }: Props) {
               correctas?: number
               incorrectas?: number
               porcentaje?: number
+              tiempoTexto?: string
+              tiempoSegundos?: number
               createdAt?: { seconds?: number; nanoseconds?: number }
             }
 
@@ -59,6 +69,10 @@ export default function CalificacionesPage({ currentUid }: Props) {
               correctas: typeof data.correctas === 'number' ? data.correctas : 0,
               incorrectas: typeof data.incorrectas === 'number' ? data.incorrectas : 0,
               porcentaje: typeof data.porcentaje === 'number' ? data.porcentaje : 0,
+              tiempoTexto:
+                typeof data.tiempoTexto === 'string'
+                  ? data.tiempoTexto
+                  : formatElapsedTime(typeof data.tiempoSegundos === 'number' ? data.tiempoSegundos : 0),
               fechaLabel: fecha ? fecha.toLocaleString('es-PE') : 'Sin fecha',
               timestampMs,
             }

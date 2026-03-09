@@ -8,6 +8,8 @@ function App() {
       <Routes>
         <Route path="/" element={<AuthPage />} />
         <Route path="/inicio" element={<HomePage />} />
+        <Route path="/inicio/comenzar/:examId" element={<HomePage />} />
+        <Route path="/inicio/rendir/:examId" element={<HomePage />} />
         <Route path="/perfil" element={<HomePage />} />
         <Route path="/calificaciones" element={<HomePage />} />
         <Route path="/examenes" element={<HomePage />} />

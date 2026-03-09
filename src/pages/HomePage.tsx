@@ -244,8 +244,13 @@ export default function HomePage() {
   const isExamFormRoute = location.pathname === '/examenes/form'
 
   useEffect(() => {
-    const validPaths = ['/inicio', '/perfil', '/calificaciones', '/examenes', '/examenes/form', '/dashboard']
-    if (!validPaths.includes(location.pathname)) {
+    const isInicioRoute =
+      location.pathname === '/inicio' ||
+      /^\/inicio\/comenzar\/[^/]+$/.test(location.pathname) ||
+      /^\/inicio\/rendir\/[^/]+$/.test(location.pathname)
+
+    const validPaths = ['/perfil', '/calificaciones', '/examenes', '/examenes/form', '/dashboard']
+    if (!isInicioRoute && !validPaths.includes(location.pathname)) {
       navigate('/inicio', { replace: true })
     }
   }, [location.pathname, navigate])
@@ -654,7 +659,7 @@ export default function HomePage() {
   const currentTheme = themeStyles[colorTheme]
   const currentSectionLabel =
     currentSection === 'inicio'
-      ? 'Inicio'
+      ? 'Rendir examen'
       : currentSection === 'lista-examenes'
         ? 'Exámenes'
         : currentSection === 'calificaciones'
@@ -664,7 +669,7 @@ export default function HomePage() {
           : 'Dashboard admin'
   const viewTitle =
     currentSection === 'inicio'
-      ? 'Inicio'
+      ? 'Rendir examen'
       : currentSection === 'calificaciones'
         ? 'Mis calificaciones'
       : currentSection === 'lista-examenes'
@@ -814,7 +819,7 @@ export default function HomePage() {
                   currentSection === 'inicio' ? currentTheme.menuActive : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
-                Inicio
+                Rendir examen
               </button>
               <button
                 type="button"
@@ -862,6 +867,18 @@ export default function HomePage() {
                 currentUid={currentUid}
                 currentUserName={sanitizePlainText(perfil.nombre || perfil.email, LIMITS.profileName)}
                 currentUserEmail={sanitizePlainText(perfil.email, 120)}
+                actionButtonClass={currentTheme.actionPrimary}
+                progressBarClass={
+                  colorTheme === 'azul'
+                    ? 'bg-blue-600'
+                    : colorTheme === 'morado'
+                      ? 'bg-violet-600'
+                      : colorTheme === 'emerald'
+                        ? 'bg-emerald-600'
+                        : colorTheme === 'negro'
+                          ? 'bg-slate-900'
+                          : 'bg-slate-500'
+                }
               />
             )}
 

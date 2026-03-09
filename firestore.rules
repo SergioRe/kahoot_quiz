@@ -82,11 +82,13 @@ service cloud.firestore {
         && data.email is string && data.email.size() <= 120
         && data.examenId is string && data.examenId.size() > 0
         && data.examenTitulo is string && data.examenTitulo.size() > 0 && data.examenTitulo.size() <= 120
-        && data.totalPreguntas is int && data.totalPreguntas >= 1 && data.totalPreguntas <= 5
+        && data.totalPreguntas is int && data.totalPreguntas >= 1 && data.totalPreguntas <= 100
         && data.correctas is int && data.correctas >= 0 && data.correctas <= data.totalPreguntas
         && data.incorrectas is int && data.incorrectas >= 0 && data.incorrectas <= data.totalPreguntas
         && data.correctas + data.incorrectas == data.totalPreguntas
         && data.porcentaje is int && data.porcentaje >= 0 && data.porcentaje <= 100
+        && data.tiempoSegundos is int && data.tiempoSegundos >= 0 && data.tiempoSegundos <= 86400
+        && data.tiempoTexto is string && data.tiempoTexto.size() >= 8 && data.tiempoTexto.size() <= 12
         && data.keys().hasOnly([
           'uid',
           'nombre',
@@ -97,6 +99,8 @@ service cloud.firestore {
           'correctas',
           'incorrectas',
           'porcentaje',
+          'tiempoSegundos',
+          'tiempoTexto',
           'createdAt'
         ]);
     }

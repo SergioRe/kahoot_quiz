@@ -5,6 +5,7 @@ type CalificacionItem = {
   correctas: number
   incorrectas: number
   porcentaje: number
+  tiempoTexto: string
   fechaLabel: string
 }
 
@@ -36,6 +37,7 @@ export default function CalificacionesView({ calificaciones, loading, message }:
                 <th className="px-3 py-2 text-left font-bold">Correctas</th>
                 <th className="px-3 py-2 text-left font-bold">Incorrectas</th>
                 <th className="px-3 py-2 text-left font-bold">Porcentaje</th>
+                <th className="px-3 py-2 text-left font-bold">Tiempo</th>
               </tr>
             </thead>
             <tbody>
@@ -47,6 +49,7 @@ export default function CalificacionesView({ calificaciones, loading, message }:
                   <td className="px-3 py-2 text-emerald-700 font-semibold">{item.correctas}</td>
                   <td className="px-3 py-2 text-rose-700 font-semibold">{item.incorrectas}</td>
                   <td className="px-3 py-2 text-indigo-700 font-semibold">{item.porcentaje}%</td>
+                  <td className="px-3 py-2 text-slate-700 font-semibold">{item.tiempoTexto}</td>
                 </tr>
               ))}
             </tbody>
