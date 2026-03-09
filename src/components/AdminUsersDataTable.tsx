@@ -121,7 +121,7 @@ export default function AdminUsersDataTable({
   }
 
   return (
-    <section className="grid gap-4">
+    <section className="min-w-0 grid gap-4">
       <div className="grid grid-cols-1 gap-3 md:grid-cols-4">
         <article className="rounded-xl border border-slate-200 p-4">
           <p className="text-xs font-semibold uppercase text-slate-500">Total usuarios</p>
@@ -215,28 +215,28 @@ export default function AdminUsersDataTable({
         <div className="mt-4 max-h-[26rem] overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
           <table className="min-w-[860px] text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-600">
-                <th className="px-2 py-2 font-semibold">
+              <tr className="border-b border-slate-200 text-slate-900">
+                  <th className="px-2 py-2 font-bold">
                   <button type="button" onClick={() => handleSort('nombre')} className="hover:text-slate-900">
                     Nombre
                   </button>
                 </th>
-                <th className="px-2 py-2 font-semibold">
+                  <th className="px-2 py-2 font-bold">
                   <button type="button" onClick={() => handleSort('email')} className="hover:text-slate-900">
                     Correo
                   </button>
                 </th>
-                <th className="px-2 py-2 font-semibold">
+                  <th className="px-2 py-2 font-bold">
                   <button type="button" onClick={() => handleSort('rol')} className="hover:text-slate-900">
                     Rol
                   </button>
                 </th>
-                <th className="px-2 py-2 font-semibold">
+                  <th className="px-2 py-2 font-bold">
                   <button type="button" onClick={() => handleSort('activo')} className="hover:text-slate-900">
                     Estado
                   </button>
                 </th>
-                <th className="px-2 py-2 font-semibold">Acciones</th>
+                  <th className="px-2 py-2 font-bold">Acciones</th>
               </tr>
             </thead>
             <tbody>
