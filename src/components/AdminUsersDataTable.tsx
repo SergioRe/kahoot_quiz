@@ -157,16 +157,29 @@ export default function AdminUsersDataTable({
         </div>
 
         <div className="grid gap-3 md:grid-cols-4">
-          <input
-            type="text"
-            placeholder="Buscar por nombre o correo"
-            value={search}
-            onChange={(event) => {
-              setSearch(event.target.value)
-              setPage(1)
-            }}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-          />
+          <div className="relative">
+            <svg
+              aria-hidden="true"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+            >
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" />
+            </svg>
+            <input
+              type="text"
+              placeholder="Buscar por nombre o correo"
+              value={search}
+              onChange={(event) => {
+                setSearch(event.target.value)
+                setPage(1)
+              }}
+              className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
 
           <select
             value={statusFilter}
@@ -216,7 +229,7 @@ export default function AdminUsersDataTable({
         <div className="table-scroll-area w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100 max-h-[26rem]">
           <table className="min-w-[860px] w-full text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-900">
+              <tr className="themed-table-head border-b border-slate-200">
                   <th className="px-2 py-2 font-bold">
                   <button type="button" onClick={() => handleSort('nombre')} className="hover:text-slate-900">
                     Nombre

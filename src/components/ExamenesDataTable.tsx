@@ -45,23 +45,36 @@ export default function ExamenesDataTable({
     <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-4">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-sm font-semibold text-slate-900">Lista de exámenes</h3>
-        <input
-          type="text"
-          value={search}
-          onChange={(event) => {
-            setSearch(event.target.value)
-            setPage(1)
-          }}
-          placeholder="Buscar examen"
-          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 md:w-72"
-        />
+        <div className="relative w-full md:w-72">
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+          >
+            <circle cx="11" cy="11" r="7" />
+            <path d="m20 20-3.5-3.5" />
+          </svg>
+          <input
+            type="text"
+            value={search}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setPage(1)
+            }}
+            placeholder="Buscar examen"
+            className="w-full rounded-lg border border-slate-300 py-2 pl-9 pr-3 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+          />
+        </div>
       </div>
 
       <p className="mb-2 text-[11px] font-semibold text-slate-500 sm:hidden">← Desliza para ver más columnas →</p>
       <div className="table-scroll-area max-h-[26rem] w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100">
         <table className="min-w-[760px] w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-slate-600 bg-white">
+              <tr className="themed-table-head border-b border-slate-200">
               <th className="px-2 py-2 font-bold">Nombre de examen</th>
               <th className="px-2 py-2 font-bold">Descripción</th>
               <th className="px-2 py-2 font-bold">Cantidad de preguntas</th>
@@ -92,17 +105,42 @@ export default function ExamenesDataTable({
                       <button
                         type="button"
                         onClick={() => onEdit(item.id)}
-                        className="rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-indigo-700"
+                        className="inline-flex items-center gap-1 rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-700"
                       >
-                        Editar
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          className="h-3.5 w-3.5"
+                        >
+                          <path d="M12 20h9" />
+                          <path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5Z" />
+                        </svg>
+                        <span>Editar</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => void onDelete(item.id)}
                         disabled={deletingExamId === item.id}
-                        className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {deletingExamId === item.id ? 'Eliminando...' : 'Eliminar'}
+                        <svg
+                          aria-hidden="true"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          className="h-3.5 w-3.5"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4h8v2" />
+                          <path d="M19 6l-1 14H6L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                        </svg>
+                        <span>{deletingExamId === item.id ? 'Eliminando...' : 'Eliminar'}</span>
                       </button>
                     </div>
                   </td>

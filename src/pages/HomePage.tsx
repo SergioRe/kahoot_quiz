@@ -11,7 +11,7 @@ import DashboardAdminPage from './home/DashboardAdminPage'
 
 type HomeSection = 'inicio' | 'lista-examenes' | 'perfil' | 'dashboard'
 type UserRole = 'admin' | 'usuario'
-type ColorTheme = 'azul' | 'morado' | 'emerald'
+type ColorTheme = 'azul' | 'morado' | 'emerald' | 'negro' | 'blanco'
 
 type ExamenPregunta = {
   texto: string
@@ -69,27 +69,57 @@ export default function HomePage() {
   const [examenesLoading, setExamenesLoading] = useState(false)
   const [examenesMessage, setExamenesMessage] = useState('')
 
-  const themeStyles: Record<ColorTheme, { main: string; surface: string; accent: string }> = {
+  const themeStyles: Record<ColorTheme, { main: string; surface: string; accent: string; menuActive: string }> = {
     azul: {
       main: 'bg-gradient-to-b from-blue-300 via-blue-500 to-indigo-900',
       surface: 'bg-white',
       accent: 'Azul',
+      menuActive: 'bg-blue-600 text-white',
     },
     morado: {
       main: 'bg-gradient-to-b from-violet-300 via-purple-500 to-fuchsia-900',
       surface: 'bg-violet-50',
       accent: 'Morado',
+      menuActive: 'bg-violet-600 text-white',
     },
     emerald: {
       main: 'bg-gradient-to-b from-emerald-200 via-teal-500 to-cyan-900',
       surface: 'bg-emerald-50',
       accent: 'Verde',
+      menuActive: 'bg-emerald-600 text-white',
+    },
+    negro: {
+      main: 'bg-gradient-to-b from-slate-600 via-slate-800 to-black',
+      surface: 'bg-slate-100',
+      accent: 'Negro',
+      menuActive: 'bg-slate-900 text-white',
+    },
+    blanco: {
+      main: 'bg-gradient-to-b from-white via-slate-100 to-slate-300',
+      surface: 'bg-white',
+      accent: 'Blanco',
+      menuActive: 'bg-slate-200 text-slate-900',
     },
   }
 
+  const colorOptions: Array<{ key: ColorTheme; label: string; bgClass: string }> = [
+    { key: 'azul', label: 'Azul', bgClass: 'bg-blue-500' },
+    { key: 'morado', label: 'Morado', bgClass: 'bg-violet-500' },
+    { key: 'emerald', label: 'Verde', bgClass: 'bg-emerald-500' },
+    { key: 'negro', label: 'Negro', bgClass: 'bg-slate-900' },
+    { key: 'blanco', label: 'Blanco', bgClass: 'bg-white' },
+  ]
+
   useEffect(() => {
     const savedTheme = localStorage.getItem('home-color-theme') as ColorTheme | null
-    if (savedTheme && (savedTheme === 'azul' || savedTheme === 'morado' || savedTheme === 'emerald')) {
+    if (
+      savedTheme &&
+      (savedTheme === 'azul' ||
+        savedTheme === 'morado' ||
+        savedTheme === 'emerald' ||
+        savedTheme === 'negro' ||
+        savedTheme === 'blanco')
+    ) {
       setColorTheme(savedTheme)
     }
   }, [])
@@ -97,14 +127,6 @@ export default function HomePage() {
   useEffect(() => {
     localStorage.setItem('home-color-theme', colorTheme)
   }, [colorTheme])
-
-  const handleToggleTheme = () => {
-    setColorTheme((prevTheme) => {
-      if (prevTheme === 'azul') return 'morado'
-      if (prevTheme === 'morado') return 'emerald'
-      return 'azul'
-    })
-  }
 
   const addQuestion = () => {
     setPreguntas((prev) => [...prev, { texto: '', respuestas: ['', '', '', ''], correctaIndex: 0 }])
@@ -570,7 +592,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className={`min-h-screen p-4 md:p-6 ${currentTheme.main}`}>
+    <main data-theme={colorTheme} className={`min-h-screen p-4 md:p-6 ${currentTheme.main}`}>
       <section className={`w-full rounded-2xl p-4 shadow-2xl md:p-6 ${currentTheme.surface}`}>
         <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white/80 p-4">
@@ -582,7 +604,7 @@ export default function HomePage() {
                 type="button"
                 onClick={() => navigate('/inicio')}
                 className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  currentSection === 'inicio' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  currentSection === 'inicio' ? currentTheme.menuActive : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 Inicio
@@ -591,7 +613,7 @@ export default function HomePage() {
                 type="button"
                 onClick={() => navigate('/perfil')}
                 className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  currentSection === 'perfil' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  currentSection === 'perfil' ? currentTheme.menuActive : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 Editar datos del perfil
@@ -600,7 +622,9 @@ export default function HomePage() {
                 type="button"
                 onClick={() => navigate('/examenes')}
                 className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  currentSection === 'lista-examenes' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  currentSection === 'lista-examenes'
+                    ? currentTheme.menuActive
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 Ver exámenes
@@ -609,7 +633,9 @@ export default function HomePage() {
                 type="button"
                 onClick={() => navigate('/dashboard')}
                 className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  currentSection === 'dashboard' ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  currentSection === 'dashboard'
+                    ? currentTheme.menuActive
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                 }`}
               >
                 Dashboard admin
@@ -617,13 +643,32 @@ export default function HomePage() {
             </nav>
 
             <div className="mt-6 grid gap-2">
-              <button
-                type="button"
-                onClick={handleToggleTheme}
-                className="w-full rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-              >
-                Cambiar color ({currentTheme.accent})
-              </button>
+              <div className="rounded-lg border border-slate-300 bg-white px-3 py-2">
+                <p className="text-xs font-semibold text-slate-600">Color del tema ({currentTheme.accent})</p>
+                <div className="mt-2 flex items-center gap-2">
+                  {colorOptions.map((option) => {
+                    const isActive = colorTheme === option.key
+                    return (
+                      <div key={option.key} className="group relative">
+                        <button
+                          type="button"
+                          onClick={() => setColorTheme(option.key)}
+                          title={option.label}
+                          aria-label={`Seleccionar tema ${option.label}`}
+                          className={`h-7 w-7 rounded-full border-2 transition ${
+                            isActive
+                              ? 'border-slate-900 ring-2 ring-slate-300'
+                              : 'border-slate-300 hover:border-slate-500'
+                          } ${option.key === 'blanco' ? 'shadow-inner' : ''} ${option.bgClass}`}
+                        />
+                        <span className="pointer-events-none absolute -bottom-7 left-1/2 -translate-x-1/2 rounded bg-slate-900 px-2 py-0.5 text-[10px] font-semibold text-white opacity-0 transition group-hover:opacity-100 group-focus-within:opacity-100">
+                          {option.label}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
               <button
                 type="button"
                 onClick={handleLogout}

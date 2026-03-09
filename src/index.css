@@ -25,3 +25,33 @@
 .table-scroll-area::-webkit-scrollbar-thumb:hover {
 	background: #475569;
 }
+
+.themed-table-head {
+	background: #f8fafc;
+	color: #0f172a;
+}
+
+main[data-theme='azul'] .themed-table-head {
+	background: #dbeafe;
+	color: #1e3a8a;
+}
+
+main[data-theme='morado'] .themed-table-head {
+	background: #ede9fe;
+	color: #5b21b6;
+}
+
+main[data-theme='emerald'] .themed-table-head {
+	background: #d1fae5;
+	color: #065f46;
+}
+
+main[data-theme='negro'] .themed-table-head {
+	background: #1e293b;
+	color: #f8fafc;
+}
+
+main[data-theme='blanco'] .themed-table-head {
+	background: #f1f5f9;
+	color: #0f172a;
+}

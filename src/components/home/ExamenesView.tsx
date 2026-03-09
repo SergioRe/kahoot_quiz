@@ -72,9 +72,10 @@ export default function ExamenesView({
         <button
           type="button"
           onClick={onShowAdd}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+          className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700"
         >
-          Agregar examen
+          <span aria-hidden="true">＋</span>
+          <span>Agregar examen</span>
         </button>
       </div>
 
@@ -118,9 +119,10 @@ export default function ExamenesView({
                     <button
                       type="button"
                       onClick={() => onRemoveQuestion(questionIndex)}
-                      className="w-full rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 sm:w-auto"
+                      className="inline-flex w-full items-center justify-center gap-1 rounded-lg border border-rose-300 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:bg-rose-50 sm:w-auto"
                     >
-                      Eliminar
+                      <span aria-hidden="true">－</span>
+                      <span>Eliminar</span>
                     </button>
                   )}
                 </div>
@@ -165,9 +167,10 @@ export default function ExamenesView({
             <button
               type="button"
               onClick={onAddQuestion}
-              className="w-full rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 sm:w-auto"
+              className="inline-flex w-full items-center justify-center gap-1 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 sm:w-auto"
             >
-              + Agregar pregunta
+              <span aria-hidden="true">＋</span>
+              <span>Agregar pregunta</span>
             </button>
             <button
               type="submit"
