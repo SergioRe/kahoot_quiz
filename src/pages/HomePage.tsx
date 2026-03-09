@@ -8,8 +8,9 @@ import InicioPage from './home/InicioPage'
 import PerfilPage from './home/PerfilPage'
 import ExamenesPage from './home/ExamenesPage'
 import DashboardAdminPage from './home/DashboardAdminPage'
+import CalificacionesPage from './home/CalificacionesPage'
 
-type HomeSection = 'inicio' | 'lista-examenes' | 'perfil' | 'dashboard'
+type HomeSection = 'inicio' | 'lista-examenes' | 'calificaciones' | 'perfil' | 'dashboard'
 type UserRole = 'admin' | 'usuario'
 type ColorTheme = 'azul' | 'morado' | 'emerald' | 'negro' | 'blanco'
 
@@ -48,6 +49,8 @@ const LIMITS = {
   questionText: 280,
   answerText: 180,
 } as const
+
+const MAX_QUESTIONS_PER_EXAM = 5
 
 const normalizeText = (value: string) => value.replace(/\s+/g, ' ').trim()
 const sanitizePlainText = (value: string, maxLength: number) =>
@@ -170,7 +173,13 @@ export default function HomePage() {
   }, [])
 
   const addQuestion = () => {
+    if (preguntas.length >= MAX_QUESTIONS_PER_EXAM) {
+      setExamenMessage(`Solo puedes registrar hasta ${MAX_QUESTIONS_PER_EXAM} preguntas por examen.`)
+      return
+    }
+
     setPreguntas((prev) => [...prev, { texto: '', respuestas: ['', '', '', ''], correctaIndex: 0 }])
+    setExamenMessage('')
   }
 
   const removeQuestion = (index: number) => {
@@ -218,23 +227,45 @@ export default function HomePage() {
     resetExamForm()
     setExamenMessage('')
     setShowExamForm(true)
+    navigate('/examenes/form')
   }
 
   const currentSection: HomeSection =
     location.pathname === '/perfil'
       ? 'perfil'
-      : location.pathname === '/examenes'
+      : location.pathname === '/calificaciones'
+        ? 'calificaciones'
+      : location.pathname === '/examenes' || location.pathname === '/examenes/form'
         ? 'lista-examenes'
         : location.pathname === '/dashboard'
           ? 'dashboard'
           : 'inicio'
 
+  const isExamFormRoute = location.pathname === '/examenes/form'
+
   useEffect(() => {
-    const validPaths = ['/inicio', '/perfil', '/examenes', '/dashboard']
+    const validPaths = ['/inicio', '/perfil', '/calificaciones', '/examenes', '/examenes/form', '/dashboard']
     if (!validPaths.includes(location.pathname)) {
       navigate('/inicio', { replace: true })
     }
   }, [location.pathname, navigate])
+
+  useEffect(() => {
+    if (currentSection !== 'lista-examenes') {
+      return
+    }
+
+    if (isExamFormRoute && !showExamForm) {
+      resetExamForm()
+      setExamenMessage('')
+      setShowExamForm(true)
+      return
+    }
+
+    if (!isExamFormRoute && showExamForm) {
+      setShowExamForm(false)
+    }
+  }, [currentSection, isExamFormRoute, showExamForm])
 
   const fetchExamenes = async () => {
     try {
@@ -457,6 +488,11 @@ export default function HomePage() {
       return
     }
 
+    if (preguntas.length > MAX_QUESTIONS_PER_EXAM) {
+      setExamenMessage(`Solo puedes registrar hasta ${MAX_QUESTIONS_PER_EXAM} preguntas por examen.`)
+      return
+    }
+
     const safePreguntas = preguntas.map((question) => ({
       ...question,
       texto: sanitizePlainText(question.texto, LIMITS.questionText),
@@ -578,7 +614,7 @@ export default function HomePage() {
       setEditingExamId(examId)
       setExamenMessage('')
       setShowExamForm(true)
-      navigate('/examenes')
+      navigate('/examenes/form')
     } catch {
       setExamenesMessage('No se pudo cargar el examen para edición.')
     }
@@ -621,14 +657,22 @@ export default function HomePage() {
       ? 'Inicio'
       : currentSection === 'lista-examenes'
         ? 'Exámenes'
+        : currentSection === 'calificaciones'
+          ? 'Calificaciones'
         : currentSection === 'perfil'
           ? 'Perfil'
           : 'Dashboard admin'
   const viewTitle =
     currentSection === 'inicio'
       ? 'Inicio'
+      : currentSection === 'calificaciones'
+        ? 'Mis calificaciones'
       : currentSection === 'lista-examenes'
-          ? 'Ver exámenes'
+          ? isExamFormRoute
+            ? editingExamId
+              ? 'Editar examen'
+              : 'Nuevo examen'
+            : 'Ver exámenes'
         : currentSection === 'perfil'
           ? 'Editar datos del perfil'
           : 'Dashboard admin'
@@ -785,6 +829,17 @@ export default function HomePage() {
               </button>
               <button
                 type="button"
+                onClick={() => navigate('/calificaciones')}
+                className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
+                  currentSection === 'calificaciones'
+                    ? currentTheme.menuActive
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                Mis calificaciones
+              </button>
+              <button
+                type="button"
                 onClick={() => navigate('/dashboard')}
                 className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
                   currentSection === 'dashboard'
@@ -802,7 +857,15 @@ export default function HomePage() {
               <h2 className="text-2xl font-bold text-slate-900">{viewTitle}</h2>
             </header>
 
-            {currentSection === 'inicio' && <InicioPage />}
+            {currentSection === 'inicio' && (
+              <InicioPage
+                currentUid={currentUid}
+                currentUserName={sanitizePlainText(perfil.nombre || perfil.email, LIMITS.profileName)}
+                currentUserEmail={sanitizePlainText(perfil.email, 120)}
+              />
+            )}
+
+            {currentSection === 'calificaciones' && <CalificacionesPage currentUid={currentUid} />}
 
             {currentSection === 'perfil' && (
               <PerfilPage
@@ -841,6 +904,7 @@ export default function HomePage() {
             {currentSection === 'lista-examenes' && (
               <ExamenesPage
                 showExamForm={showExamForm}
+                showExamList={!isExamFormRoute}
                 editingExamId={editingExamId}
                 examenTitulo={examenTitulo}
                 examenDescripcion={examenDescripcion}
@@ -863,6 +927,7 @@ export default function HomePage() {
                   resetExamForm()
                   setShowExamForm(false)
                   setExamenMessage('')
+                  navigate('/examenes')
                 }}
                 onSubmit={handleSaveExam}
                 onEditExam={handleEditExam}

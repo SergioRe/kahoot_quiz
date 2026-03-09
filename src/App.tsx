@@ -9,7 +9,9 @@ function App() {
         <Route path="/" element={<AuthPage />} />
         <Route path="/inicio" element={<HomePage />} />
         <Route path="/perfil" element={<HomePage />} />
+        <Route path="/calificaciones" element={<HomePage />} />
         <Route path="/examenes" element={<HomePage />} />
+        <Route path="/examenes/form" element={<HomePage />} />
         <Route path="/dashboard" element={<HomePage />} />
         <Route path="/home" element={<Navigate to="/inicio" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
