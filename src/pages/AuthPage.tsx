@@ -20,6 +20,7 @@ function mapFirebaseError(code: string) {
     'auth/invalid-credential': 'Contraseña inválida.',
     'auth/user-not-found': 'Correo no registrado.',
     'auth/wrong-password': 'Contraseña inválida.',
+    'auth/unauthorized-domain': 'Este dominio no está autorizado para iniciar sesión con Google. Contacta al administrador.',
     'auth/email-already-in-use': 'Usuario ya existe con este correo.',
     'auth/account-exists-with-different-credential': 'Usuario ya existe con este correo.',
     'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',

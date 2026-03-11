@@ -667,7 +667,7 @@ export default function HomePage() {
       setSaving(true)
       setStatusMessage('')
       await sendPasswordResetEmail(auth, perfil.email)
-      setStatusMessage('Te enviamos un enlace para cambiar tu contraseña a tu correo.')
+      setStatusMessage('Enviado.')
     } catch {
       setStatusMessage('No se pudo enviar el enlace de cambio de contraseña. Inténtalo de nuevo.')
     } finally {

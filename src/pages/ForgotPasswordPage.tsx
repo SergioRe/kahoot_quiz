@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { fetchSignInMethodsForEmail, sendPasswordResetEmail } from 'firebase/auth'
+import { sendPasswordResetEmail } from 'firebase/auth'
 import { auth } from '../firebase'
 
 function mapResetError(code: string) {
@@ -35,14 +35,8 @@ export default function ForgotPasswordPage() {
 
     try {
       setLoading(true)
-      const methods = await fetchSignInMethodsForEmail(auth, normalizedEmail)
-      if (!methods.includes('password')) {
-        setMessage('Usuario no existe.')
-        return
-      }
-
       await sendPasswordResetEmail(auth, normalizedEmail)
-      setMessage('Te enviamos un enlace para restablecer tu contraseña.')
+      setMessage('Enviado.')
       setIsSuccess(true)
     } catch (error) {
       const errorCode = (error as { code?: string }).code
