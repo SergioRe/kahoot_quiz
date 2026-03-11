@@ -9,6 +9,7 @@ type ExamenListado = {
   titulo: string
   descripcion: string
   totalPreguntas: number
+  estadoRevision?: 'pendiente' | 'aprobado' | 'rechazado'
 }
 
 type ExamenPregunta = {
