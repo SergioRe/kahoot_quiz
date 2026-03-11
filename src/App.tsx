@@ -1,5 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AuthPage from './pages/AuthPage'
+import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import HomePage from './pages/HomePage'
 
 function App() {
@@ -9,6 +10,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<AuthPage />} />
+        <Route path="/recuperar-contrasena" element={<ForgotPasswordPage />} />
         <Route path="/inicio" element={<HomePage />} />
         <Route path="/inicio/comenzar/:examId" element={<HomePage />} />
         <Route path="/inicio/rendir/:examId" element={<HomePage />} />

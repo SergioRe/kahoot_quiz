@@ -4,8 +4,8 @@ import { useNavigate } from 'react-router-dom'
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
+  fetchSignInMethodsForEmail,
   onAuthStateChanged,
-  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
 } from 'firebase/auth'
@@ -16,10 +16,10 @@ type Mode = 'login' | 'register'
 
 function mapFirebaseError(code: string) {
   const errorMap: Record<string, string> = {
-    'auth/invalid-email': 'El correo no es válido.',
-    'auth/invalid-credential': 'Correo o contraseña incorrectos.',
-    'auth/user-not-found': 'No existe una cuenta con ese correo.',
-    'auth/wrong-password': 'La contraseña es incorrecta.',
+    'auth/invalid-email': 'Formato de correo inválido.',
+    'auth/invalid-credential': 'Contraseña inválida.',
+    'auth/user-not-found': 'Correo no registrado.',
+    'auth/wrong-password': 'Contraseña inválida.',
     'auth/email-already-in-use': 'Usuario ya existe con este correo.',
     'auth/account-exists-with-different-credential': 'Usuario ya existe con este correo.',
     'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
@@ -65,6 +65,14 @@ export default function AuthPage() {
     event.preventDefault()
     setMessage('')
 
+    const normalizedEmail = email.trim().toLowerCase()
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    if (!emailRegex.test(normalizedEmail)) {
+      setMessage('Formato de correo inválido.')
+      return
+    }
+
     if (mode === 'register' && password !== confirmPassword) {
       setMessage('Las contraseñas no coinciden.')
       return
@@ -74,15 +82,21 @@ export default function AuthPage() {
       setLoading(true)
 
       if (mode === 'login') {
-        await signInWithEmailAndPassword(auth, email, password)
+        const methods = await fetchSignInMethodsForEmail(auth, normalizedEmail)
+        if (!methods.includes('password')) {
+          setMessage('Correo no registrado.')
+          return
+        }
+
+        await signInWithEmailAndPassword(auth, normalizedEmail, password)
         navigate('/inicio', { replace: true })
       } else {
-        const credentials = await createUserWithEmailAndPassword(auth, email, password)
+        const credentials = await createUserWithEmailAndPassword(auth, normalizedEmail, password)
 
         await setDoc(doc(db, 'usuarios', credentials.user.uid), {
           uid: credentials.user.uid,
           nombre: name,
-          email,
+          email: normalizedEmail,
           activo: true,
           rol: 'usuario',
           puedeGestionarExamenes: false,
@@ -158,26 +172,6 @@ export default function AuthPage() {
     }
   }
 
-  const handleForgotPassword = async () => {
-    const normalizedEmail = email.trim()
-    if (!normalizedEmail) {
-      setMessage('Ingresa tu correo para enviarte el enlace de recuperación.')
-      return
-    }
-
-    try {
-      setLoading(true)
-      setMessage('')
-      await sendPasswordResetEmail(auth, normalizedEmail)
-      setMessage('Te enviamos un enlace para restablecer tu contraseña.')
-    } catch (error) {
-      const errorCode = (error as { code?: string }).code
-      setMessage(mapFirebaseError(errorCode ?? ''))
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-300 via-blue-500 to-indigo-900 p-6">
       <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl" aria-label="Formulario de autenticación">
@@ -204,6 +198,7 @@ export default function AuthPage() {
                 placeholder="Tu nombre"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
+                maxLength={50}
                 required
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
               />
@@ -219,6 +214,8 @@ export default function AuthPage() {
             placeholder="tu@correo.com"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
+            minLength={5}
+            maxLength={50}
             required
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
           />
@@ -232,6 +229,8 @@ export default function AuthPage() {
             placeholder="••••••••"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
+            minLength={5}
+            maxLength={15}
             required
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
           />
@@ -239,7 +238,7 @@ export default function AuthPage() {
           {mode === 'login' && (
             <button
               type="button"
-              onClick={() => void handleForgotPassword()}
+              onClick={() => navigate('/recuperar-contrasena')}
               disabled={loading}
               className="justify-self-start text-xs font-semibold text-indigo-600 transition hover:underline disabled:cursor-not-allowed disabled:opacity-70"
             >
@@ -258,6 +257,8 @@ export default function AuthPage() {
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
+                minLength={5}
+                maxLength={15}
                 required
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
               />
@@ -323,7 +324,7 @@ export default function AuthPage() {
           )}
         </form>
 
-        {message && <p className="mt-4 text-center text-sm text-slate-600">{message}</p>}
+        {message && <p className="mt-4 text-center text-sm font-bold text-rose-600">{message}</p>}
 
         <div className="mt-5 text-sm text-slate-600">
           <span>{mode === 'login' ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '}</span>
