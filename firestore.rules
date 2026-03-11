@@ -36,6 +36,11 @@ service cloud.firestore {
       return value is string && (value == 'admin' || value == 'usuario');
     }
 
+    function isValidColorTheme(value) {
+      return value is string
+        && (value == 'azul' || value == 'morado' || value == 'emerald' || value == 'negro' || value == 'blanco');
+    }
+
     function validUsuarioData(data, uid) {
       return data.uid == uid
         && data.nombre is string && data.nombre.size() <= 80
@@ -43,6 +48,7 @@ service cloud.firestore {
         && data.activo is bool
         && isValidRole(data.rol)
         && data.puedeGestionarExamenes is bool
+        && isValidColorTheme(data.colorTheme)
         && data.keys().hasOnly([
           'uid',
           'nombre',
@@ -50,6 +56,7 @@ service cloud.firestore {
           'activo',
           'rol',
           'puedeGestionarExamenes',
+          'colorTheme',
           'createdAt',
           'updatedAt'
         ]);
@@ -150,9 +157,10 @@ service cloud.firestore {
           isAdmin()
           || (
             isOwner(uid)
-            && request.resource.data.rol == resource.data.rol
-            && request.resource.data.activo == resource.data.activo
-            && request.resource.data.puedeGestionarExamenes == resource.data.puedeGestionarExamenes
+            && request.resource.data.rol == (('rol' in resource.data) ? resource.data.rol : 'usuario')
+            && request.resource.data.activo == (('activo' in resource.data) ? resource.data.activo : true)
+            && request.resource.data.puedeGestionarExamenes
+              == (('puedeGestionarExamenes' in resource.data) ? resource.data.puedeGestionarExamenes : false)
           )
         );
       allow delete: if isAdmin();

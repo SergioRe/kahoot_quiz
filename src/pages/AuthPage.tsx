@@ -77,6 +77,8 @@ export default function AuthPage() {
           email,
           activo: true,
           rol: 'usuario',
+          puedeGestionarExamenes: false,
+          colorTheme: 'azul',
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
         })

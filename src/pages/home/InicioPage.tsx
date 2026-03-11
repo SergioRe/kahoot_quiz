@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp } from 'firebase/firestore'
+import { addDoc, collection, doc, getDoc, getDocs, query, serverTimestamp, where } from 'firebase/firestore'
 import InicioView from '../../components/home/InicioView'
 import { db } from '../../firebase'
 
@@ -109,7 +109,8 @@ export default function InicioPage({
       setLoadingExamenes(true)
       setInicioMessage('')
 
-      const snapshot = await getDocs(collection(db, 'examenes'))
+      const approvedExamsQuery = query(collection(db, 'examenes'), where('estadoRevision', '==', 'aprobado'))
+      const snapshot = await getDocs(approvedExamsQuery)
       const list = snapshot.docs
         .map((docItem) => {
           const data = docItem.data() as Partial<ExamenListado> & { isSeed?: boolean }
@@ -321,6 +322,12 @@ export default function InicioPage({
         }
 
         const examData = examDoc.data() as Partial<ExamenListado>
+        if (examData.estadoRevision !== 'aprobado') {
+          setInicioMessage('Solo puedes rendir exámenes aprobados por el admin.')
+          navigate('/inicio', { replace: true })
+          return
+        }
+
         setSelectedExam({
           id: examDoc.id,
           titulo: examData.titulo ?? 'Sin título',

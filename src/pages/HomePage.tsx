@@ -39,6 +39,7 @@ type UsuarioPerfil = {
   activo: boolean
   rol: UserRole
   puedeGestionarExamenes: boolean
+  colorTheme: ColorTheme
 }
 
 type UsuarioAdmin = {
@@ -94,6 +95,9 @@ const sanitizePlainText = (value: string, maxLength: number) =>
   normalizeText(value)
     .replace(/[<>]/g, '')
     .slice(0, maxLength)
+
+const isValidColorTheme = (value: unknown): value is ColorTheme =>
+  value === 'azul' || value === 'morado' || value === 'emerald' || value === 'negro' || value === 'blanco'
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -186,20 +190,6 @@ export default function HomePage() {
   ]
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('home-color-theme') as ColorTheme | null
-    if (
-      savedTheme &&
-      (savedTheme === 'azul' ||
-        savedTheme === 'morado' ||
-        savedTheme === 'emerald' ||
-        savedTheme === 'negro' ||
-        savedTheme === 'blanco')
-    ) {
-      setColorTheme(savedTheme)
-    }
-  }, [])
-
-  useEffect(() => {
     localStorage.setItem('home-color-theme', colorTheme)
   }, [colorTheme])
 
@@ -227,6 +217,26 @@ export default function HomePage() {
 
   const removeQuestion = (index: number) => {
     setPreguntas((prev) => prev.filter((_, questionIndex) => questionIndex !== index))
+  }
+
+  const handleThemeChange = async (nextTheme: ColorTheme) => {
+    const previousTheme = colorTheme
+    setColorTheme(nextTheme)
+
+    if (!currentUid) {
+      return
+    }
+
+    try {
+      await updateDoc(doc(db, 'usuarios', currentUid), {
+        colorTheme: nextTheme,
+        updatedAt: serverTimestamp(),
+      })
+      setPerfil((prev) => (prev ? { ...prev, colorTheme: nextTheme } : prev))
+    } catch {
+      setColorTheme(previousTheme)
+      setStatusMessage('No se pudo guardar el color del tema.')
+    }
   }
 
   const updateQuestionText = (index: number, value: string) => {
@@ -372,6 +382,7 @@ export default function HomePage() {
           activo: true,
           rol: 'usuario',
           puedeGestionarExamenes: false,
+          colorTheme: 'azul',
         }
 
         await setDoc(userRef, {
@@ -383,6 +394,7 @@ export default function HomePage() {
 
         setPerfil(profileBase)
         setNombre(profileBase.nombre)
+        setColorTheme(profileBase.colorTheme)
         setLoading(false)
         return
       }
@@ -391,18 +403,25 @@ export default function HomePage() {
       const activo = typeof data.activo === 'boolean' ? data.activo : true
       const rol: UserRole = data.rol === 'admin' ? 'admin' : 'usuario'
       const puedeGestionarExamenes = typeof data.puedeGestionarExamenes === 'boolean' ? data.puedeGestionarExamenes : false
+      const storedTheme = isValidColorTheme(data.colorTheme) ? data.colorTheme : 'azul'
 
       if (
         typeof data.activo !== 'boolean' ||
         typeof data.rol !== 'string' ||
-        typeof data.puedeGestionarExamenes !== 'boolean'
+        typeof data.puedeGestionarExamenes !== 'boolean' ||
+        !isValidColorTheme(data.colorTheme)
       ) {
-        await updateDoc(userRef, {
-          activo,
-          rol,
-          puedeGestionarExamenes,
-          updatedAt: serverTimestamp(),
-        })
+        try {
+          await updateDoc(userRef, {
+            activo,
+            rol,
+            puedeGestionarExamenes,
+            colorTheme: storedTheme,
+            updatedAt: serverTimestamp(),
+          })
+        } catch {
+          // continúa con valores normalizados en memoria aunque no se pueda persistir todavía
+        }
       }
 
       const profile: UsuarioPerfil = {
@@ -411,10 +430,12 @@ export default function HomePage() {
         activo,
         rol,
         puedeGestionarExamenes,
+        colorTheme: storedTheme,
       }
 
       setPerfil(profile)
       setNombre(profile.nombre)
+      setColorTheme(profile.colorTheme)
       setLoading(false)
     })
 
@@ -502,18 +523,28 @@ export default function HomePage() {
 
       try {
         setExamApprovalRequestsLoading(true)
-        const pendingExamsQuery = query(collection(db, 'examenes'), where('estadoRevision', '==', 'pendiente'))
-        const snapshot = await getDocs(pendingExamsQuery)
-        const requests = snapshot.docs.map((docItem) => {
-          const data = docItem.data() as Partial<ExamenListado>
-          return {
-            id: docItem.id,
-            titulo: data.titulo ?? 'Sin título',
-            creadoPorUid: data.creadoPorUid ?? '',
-            creadoPorNombre: data.creadoPorNombre ?? 'Usuario',
+        const snapshot = await getDocs(collection(db, 'examenes'))
+        const requests = snapshot.docs
+          .map((docItem) => {
+            const data = docItem.data() as Partial<ExamenListado>
+            const estadoRevision =
+              data.estadoRevision === 'aprobado' || data.estadoRevision === 'rechazado' || data.estadoRevision === 'pendiente'
+                ? data.estadoRevision
+                : 'pendiente'
+
+            return {
+              id: docItem.id,
+              titulo: data.titulo ?? 'Sin título',
+              creadoPorUid: data.creadoPorUid ?? '',
+              creadoPorNombre: data.creadoPorNombre ?? 'Usuario',
+              estadoRevision,
+            }
+          })
+          .filter((item) => item.estadoRevision === 'pendiente')
+          .map((item) => ({
+            ...item,
             estadoRevision: 'pendiente' as const,
-          }
-        })
+          }))
 
         setExamApprovalRequests(requests)
       } catch {
@@ -1029,7 +1060,7 @@ export default function HomePage() {
                             <button
                               type="button"
                               onClick={() => {
-                                setColorTheme(option.key)
+                                void handleThemeChange(option.key)
                                 setIsAccountMenuOpen(false)
                               }}
                               aria-label={`Seleccionar tema ${option.label}`}
@@ -1105,17 +1136,19 @@ export default function HomePage() {
               >
                 Mis calificaciones
               </button>
-              <button
-                type="button"
-                onClick={() => navigate('/dashboard')}
-                className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
-                  currentSection === 'dashboard'
-                    ? currentTheme.menuActive
-                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                }`}
-              >
-                Dashboard admin
-              </button>
+              {perfil.rol === 'admin' && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/dashboard')}
+                  className={`w-full rounded-lg px-4 py-2 text-left text-sm font-semibold transition ${
+                    currentSection === 'dashboard'
+                      ? currentTheme.menuActive
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  Dashboard admin
+                </button>
+              )}
             </nav>
           </aside>
 
