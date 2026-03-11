@@ -198,7 +198,7 @@ export default function DashboardAdminView({
             onToggleRol={onToggleRol}
           />
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4">
+          <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-4">
             <h2 className="text-sm font-semibold text-slate-900">Solicitudes de permisos de exámenes</h2>
             <p className="mt-1 text-xs text-slate-500">Aprueba o rechaza solicitudes para agregar, editar y eliminar exámenes.</p>
 
@@ -207,8 +207,10 @@ export default function DashboardAdminView({
             ) : examAccessRequests.length === 0 ? (
               <p className="mt-3 text-sm text-slate-600">No hay solicitudes registradas.</p>
             ) : (
-              <div className="mt-3 table-scroll-area w-full overflow-x-auto rounded-lg border border-slate-100">
-                <table className="min-w-[760px] w-full text-left text-sm">
+              <>
+                <p className="mt-6 mb-2 text-[11px] font-semibold text-slate-500 sm:hidden">← Desliza para ver más columnas →</p>
+                <div className="mt-4 table-scroll-area w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100 max-h-[26rem]">
+                <table className="min-w-[860px] w-full text-left text-sm">
                   <thead className="themed-table-head border-b border-slate-200">
                     <tr>
                       <th className="px-2 py-2 font-bold">Usuario</th>
@@ -260,10 +262,11 @@ export default function DashboardAdminView({
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </section>
 
-          <section className="rounded-xl border border-slate-200 bg-white p-4">
+          <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-4">
             <h2 className="text-sm font-semibold text-slate-900">Aprobación de exámenes</h2>
             <p className="mt-1 text-xs text-slate-500">Solo los exámenes aprobados aparecen para los demás usuarios.</p>
 
@@ -272,8 +275,10 @@ export default function DashboardAdminView({
             ) : examApprovalRequests.length === 0 ? (
               <p className="mt-3 text-sm text-slate-600">No hay exámenes pendientes de aprobación.</p>
             ) : (
-              <div className="mt-3 table-scroll-area w-full overflow-x-auto rounded-lg border border-slate-100">
-                <table className="min-w-[760px] w-full text-left text-sm">
+              <>
+                <p className="mt-6 mb-2 text-[11px] font-semibold text-slate-500 sm:hidden">← Desliza para ver más columnas →</p>
+                <div className="mt-4 table-scroll-area w-full overflow-x-auto overflow-y-auto rounded-lg border border-slate-100 max-h-[26rem]">
+                <table className="min-w-[860px] w-full text-left text-sm">
                   <thead className="themed-table-head border-b border-slate-200">
                     <tr>
                       <th className="px-2 py-2 font-bold">Examen</th>
@@ -315,6 +320,7 @@ export default function DashboardAdminView({
                   </tbody>
                 </table>
               </div>
+              </>
             )}
           </section>
         </>
