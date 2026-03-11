@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="RetoCert">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#1d4ed8" />
+      <stop offset="100%" stop-color="#0ea5e9" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)" />
+  <path d="M32 14c-7.2 0-13 4.7-13 11h7c0-2.3 2.7-4 6-4s6 1.7 6 4c0 2-1.4 3.2-4.8 4.8-4.2 2-7.2 4.6-7.2 9.2V41h7v-1.2c0-2.2 1.4-3.3 4.8-4.9 4.1-1.9 7.2-4.7 7.2-9.9 0-6.3-5.8-11-13-11Z" fill="#ffffff" />
+  <circle cx="32" cy="49" r="4" fill="#ffffff" />
+</svg>

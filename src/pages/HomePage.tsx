@@ -401,17 +401,48 @@ export default function HomePage() {
         return
       }
 
-      const data = userSnap.data() as Partial<UsuarioPerfil>
-      const activo = typeof data.activo === 'boolean' ? data.activo : true
-      const rol: UserRole = data.rol === 'admin' ? 'admin' : 'usuario'
-      const puedeGestionarExamenes = typeof data.puedeGestionarExamenes === 'boolean' ? data.puedeGestionarExamenes : false
-      const storedTheme = isValidColorTheme(data.colorTheme) ? data.colorTheme : DEFAULT_COLOR_THEME
+      const rawData = userSnap.data() as Record<string, unknown>
+      const nombreEnDoc = typeof rawData.nombre === 'string' ? rawData.nombre.trim() : ''
+      const displayNameLegacy = typeof rawData.displayName === 'string' ? rawData.displayName.trim() : ''
+      const nombreNormalizado = nombreEnDoc || user.displayName?.trim() || displayNameLegacy || ''
+      const emailNormalizado = typeof rawData.email === 'string' ? rawData.email : user.email ?? ''
+      const activo = typeof rawData.activo === 'boolean' ? rawData.activo : true
+      const rol: UserRole = rawData.rol === 'admin' ? 'admin' : 'usuario'
+      const puedeGestionarExamenes = typeof rawData.puedeGestionarExamenes === 'boolean' ? rawData.puedeGestionarExamenes : false
+      const storedTheme = isValidColorTheme(rawData.colorTheme) ? rawData.colorTheme : DEFAULT_COLOR_THEME
 
-      if (
-        typeof data.activo !== 'boolean' ||
-        typeof data.rol !== 'string' ||
-        typeof data.puedeGestionarExamenes !== 'boolean' ||
-        !isValidColorTheme(data.colorTheme)
+      const needsLegacyMigration =
+        !('nombre' in rawData) ||
+        !('activo' in rawData) ||
+        !('rol' in rawData) ||
+        !('puedeGestionarExamenes' in rawData) ||
+        !('colorTheme' in rawData) ||
+        'displayName' in rawData ||
+        'providerId' in rawData ||
+        'photoURL' in rawData ||
+        'lastLoginAt' in rawData
+
+      if (needsLegacyMigration) {
+        try {
+          await setDoc(userRef, {
+            uid: user.uid,
+            nombre: nombreNormalizado,
+            email: emailNormalizado,
+            activo,
+            rol,
+            puedeGestionarExamenes,
+            colorTheme: storedTheme,
+            createdAt: rawData.createdAt ?? serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          })
+        } catch {
+          // continúa con valores normalizados en memoria aunque no se pueda persistir todavía
+        }
+      } else if (
+        typeof rawData.activo !== 'boolean' ||
+        typeof rawData.rol !== 'string' ||
+        typeof rawData.puedeGestionarExamenes !== 'boolean' ||
+        !isValidColorTheme(rawData.colorTheme)
       ) {
         try {
           await updateDoc(userRef, {
@@ -427,8 +458,8 @@ export default function HomePage() {
       }
 
       const profile: UsuarioPerfil = {
-        nombre: data.nombre?.trim() || user.displayName?.trim() || '',
-        email: data.email ?? user.email ?? '',
+        nombre: nombreNormalizado,
+        email: emailNormalizado,
         activo,
         rol,
         puedeGestionarExamenes,
@@ -1018,7 +1049,10 @@ export default function HomePage() {
         <div className="grid items-start gap-4 lg:grid-cols-[260px_minmax(0,1fr)]">
           <aside className="h-fit rounded-2xl border border-slate-200 bg-white/80 p-4">
             <div className="flex items-center justify-between gap-2">
-              <h1 className="text-xl font-bold text-slate-900">Panel</h1>
+              <div className="inline-flex items-center gap-2">
+                <img src="/retocert.svg" alt="RetoCert" className="h-9 w-9 rounded-lg" />
+                <p className="text-sm font-extrabold leading-none text-slate-900">RetoCert</p>
+              </div>
 
               <div ref={accountMenuRef} className="relative w-auto">
                 <button
@@ -1035,10 +1069,10 @@ export default function HomePage() {
                       strokeWidth="2"
                       className="h-3.5 w-3.5"
                     >
-                      <path d="M20 21a8 8 0 1 0-16 0" />
-                      <circle cx="12" cy="7" r="4" />
+                      <circle cx="12" cy="12" r="3" />
+                      <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.76l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06A1.6 1.6 0 0 0 15 19.4a1.6 1.6 0 0 0-1 .6 1.6 1.6 0 0 0-.4 1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-.4-1 1.6 1.6 0 0 0-1-.6 1.6 1.6 0 0 0-1.76.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.6 1.6 0 0 0 4.6 15a1.6 1.6 0 0 0-.6-1 1.6 1.6 0 0 0-1-.4H3a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1-.4 1.6 1.6 0 0 0 .6-1 1.6 1.6 0 0 0-.32-1.76l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.6 1.6 0 0 0 9 4.6a1.6 1.6 0 0 0 1-.6 1.6 1.6 0 0 0 .4-1V3a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 .4 1 1.6 1.6 0 0 0 1 .6 1.6 1.6 0 0 0 1.76-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.6 1.6 0 0 0 19.4 9a1.6 1.6 0 0 0 .6 1 1.6 1.6 0 0 0 1 .4h.1a2 2 0 1 1 0 4H21a1.6 1.6 0 0 0-1 .4 1.6 1.6 0 0 0-.6 1Z" />
                     </svg>
-                    <span>Mi cuenta</span>
+                    <span>Ajustes</span>
                   </span>
                   <span className="text-xs text-slate-500" aria-hidden="true">
                     {isAccountMenuOpen ? '▴' : '▾'}

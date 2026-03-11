@@ -19,7 +19,8 @@ function mapFirebaseError(code: string) {
     'auth/invalid-credential': 'Correo o contraseña incorrectos.',
     'auth/user-not-found': 'No existe una cuenta con ese correo.',
     'auth/wrong-password': 'La contraseña es incorrecta.',
-    'auth/email-already-in-use': 'Ese correo ya está registrado.',
+    'auth/email-already-in-use': 'Usuario ya existe con este correo.',
+    'auth/account-exists-with-different-credential': 'Usuario ya existe con este correo.',
     'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
   }
 
@@ -108,39 +109,43 @@ export default function AuthPage() {
 
       const provider = new GoogleAuthProvider()
       const { user } = await signInWithPopup(auth, provider)
-      const userRef = doc(db, 'usuarios', user.uid)
-      const userSnap = await getDoc(userRef)
-      const googleName = (user.displayName ?? '').trim()
-      const googleEmail = user.email ?? ''
+      try {
+        const userRef = doc(db, 'usuarios', user.uid)
+        const userSnap = await getDoc(userRef)
+        const googleName = (user.displayName ?? '').trim()
+        const googleEmail = user.email ?? ''
 
-      if (!userSnap.exists()) {
-        await setDoc(userRef, {
-          uid: user.uid,
-          nombre: googleName,
-          email: googleEmail,
-          activo: true,
-          rol: 'usuario',
-          puedeGestionarExamenes: false,
-          colorTheme: 'azul',
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        })
-      } else {
-        const data = userSnap.data() as { nombre?: string; email?: string }
-        const shouldUpdateName = Boolean(googleName) && (!data.nombre || data.nombre === data.email)
-        const shouldUpdateEmail = Boolean(googleEmail) && data.email !== googleEmail
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            uid: user.uid,
+            nombre: googleName,
+            email: googleEmail,
+            activo: true,
+            rol: 'usuario',
+            puedeGestionarExamenes: false,
+            colorTheme: 'azul',
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          })
+        } else {
+          const data = userSnap.data() as { nombre?: string; email?: string }
+          const shouldUpdateName = Boolean(googleName) && (!data.nombre || data.nombre === data.email)
+          const shouldUpdateEmail = Boolean(googleEmail) && data.email !== googleEmail
 
-        if (shouldUpdateName || shouldUpdateEmail) {
-          await setDoc(
-            userRef,
-            {
-              ...(shouldUpdateName ? { nombre: googleName } : {}),
-              ...(shouldUpdateEmail ? { email: googleEmail } : {}),
-              updatedAt: serverTimestamp(),
-            },
-            { merge: true },
-          )
+          if (shouldUpdateName || shouldUpdateEmail) {
+            await setDoc(
+              userRef,
+              {
+                ...(shouldUpdateName ? { nombre: googleName } : {}),
+                ...(shouldUpdateEmail ? { email: googleEmail } : {}),
+                updatedAt: serverTimestamp(),
+              },
+              { merge: true },
+            )
+          }
         }
+      } catch {
+        // Si falla la sincronización, HomePage normaliza/carga el perfil al entrar.
       }
 
       navigate('/inicio', { replace: true })
@@ -155,7 +160,9 @@ export default function AuthPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-300 via-blue-500 to-indigo-900 p-6">
       <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl" aria-label="Formulario de autenticación">
-        <div>
+        <div className="text-center">
+          <img src="/retocert.svg" alt="RetoCert" className="mx-auto mb-3 h-12 w-12 rounded-xl" />
+          <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">RetoCert</p>
           <h1 className="text-3xl font-bold text-slate-900">{title}</h1>
           <p className="mt-1 text-sm text-slate-500">
             {mode === 'login'
