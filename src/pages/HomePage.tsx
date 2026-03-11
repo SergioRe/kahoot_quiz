@@ -134,6 +134,7 @@ export default function HomePage() {
   const [examApprovalRequests, setExamApprovalRequests] = useState<SolicitudAprobacionExamen[]>([])
   const [examApprovalRequestsLoading, setExamApprovalRequestsLoading] = useState(false)
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false)
+  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false)
   const accountMenuRef = useRef<HTMLDivElement | null>(null)
 
   const themeStyles: Record<
@@ -565,6 +566,10 @@ export default function HomePage() {
 
     void fetchExamenes()
   }, [perfil, currentSection])
+
+  useEffect(() => {
+    setIsMobileNavOpen(false)
+  }, [location.pathname])
 
   const handleLogout = async () => {
     await signOut(auth)
@@ -1105,7 +1110,41 @@ export default function HomePage() {
             </div>
             <p className="mt-1 text-xs text-slate-500">Bienvenido, {perfil.nombre || perfil.email}</p>
 
-            <nav className="mt-5 grid gap-2">
+            <button
+              type="button"
+              onClick={() => setIsMobileNavOpen((prev) => !prev)}
+              className="mt-5 inline-flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-4 py-2 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100 md:hidden"
+            >
+              <span className="inline-flex items-center gap-2">
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  className="h-4 w-4"
+                >
+                  {isMobileNavOpen ? (
+                    <>
+                      <path d="m18 6-12 12" />
+                      <path d="m6 6 12 12" />
+                    </>
+                  ) : (
+                    <>
+                      <path d="M3 6h18" />
+                      <path d="M3 12h18" />
+                      <path d="M3 18h18" />
+                    </>
+                  )}
+                </svg>
+                <span>Menu</span>
+              </span>
+              <span className="text-xs text-slate-500" aria-hidden="true">
+                {isMobileNavOpen ? '▴' : '▾'}
+              </span>
+            </button>
+
+            <nav className={`${isMobileNavOpen ? 'grid' : 'hidden'} mt-3 gap-2 md:mt-5 md:grid`}>
               <button
                 type="button"
                 onClick={() => navigate('/inicio')}
