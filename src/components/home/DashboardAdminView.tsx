@@ -243,17 +243,24 @@ export default function DashboardAdminView({
                               type="button"
                               onClick={() => void onApproveExamAccess(request.id, request.uid)}
                               disabled={request.estado !== 'pendiente'}
-                              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                              Aprobar
+                              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                                <path d="m5 13 4 4L19 7" />
+                              </svg>
+                              <span>Aprobar</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => void onRejectExamAccess(request.id, request.uid)}
                               disabled={request.estado !== 'pendiente'}
-                              className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
+                              className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-60"
                             >
-                              Rechazar
+                              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                                <path d="m18 6-12 12" />
+                                <path d="m6 6 12 12" />
+                              </svg>
+                              <span>Rechazar</span>
                             </button>
                           </div>
                         </td>
@@ -302,16 +309,23 @@ export default function DashboardAdminView({
                             <button
                               type="button"
                               onClick={() => void onApproveExam(request.id)}
-                              className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
+                              className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-emerald-700"
                             >
-                              Aprobar examen
+                              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                                <path d="m5 13 4 4L19 7" />
+                              </svg>
+                              <span>Aprobar examen</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => void onRejectExam(request.id)}
-                              className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700"
+                              className="inline-flex items-center gap-1 rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700"
                             >
-                              Rechazar examen
+                              <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+                                <path d="m18 6-12 12" />
+                                <path d="m6 6 12 12" />
+                              </svg>
+                              <span>Rechazar examen</span>
                             </button>
                           </div>
                         </td>

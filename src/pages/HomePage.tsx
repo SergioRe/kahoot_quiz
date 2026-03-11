@@ -26,6 +26,7 @@ import CalificacionesPage from './home/CalificacionesPage'
 type HomeSection = 'inicio' | 'lista-examenes' | 'calificaciones' | 'perfil' | 'dashboard'
 type UserRole = 'admin' | 'usuario'
 type ColorTheme = 'azul' | 'morado' | 'emerald' | 'negro' | 'blanco'
+const DEFAULT_COLOR_THEME: ColorTheme = 'azul'
 
 type ExamenPregunta = {
   texto: string
@@ -112,7 +113,7 @@ export default function HomePage() {
   const [adminUsers, setAdminUsers] = useState<UsuarioAdmin[]>([])
   const [adminLoading, setAdminLoading] = useState(false)
   const [adminMessage, setAdminMessage] = useState('')
-  const [colorTheme, setColorTheme] = useState<ColorTheme>('azul')
+  const [colorTheme, setColorTheme] = useState<ColorTheme>(DEFAULT_COLOR_THEME)
   const [examenTitulo, setExamenTitulo] = useState('')
   const [examenDescripcion, setExamenDescripcion] = useState('')
   const [preguntas, setPreguntas] = useState<ExamenPregunta[]>([
@@ -382,7 +383,7 @@ export default function HomePage() {
           activo: true,
           rol: 'usuario',
           puedeGestionarExamenes: false,
-          colorTheme: 'azul',
+          colorTheme: DEFAULT_COLOR_THEME,
         }
 
         await setDoc(userRef, {
@@ -403,7 +404,7 @@ export default function HomePage() {
       const activo = typeof data.activo === 'boolean' ? data.activo : true
       const rol: UserRole = data.rol === 'admin' ? 'admin' : 'usuario'
       const puedeGestionarExamenes = typeof data.puedeGestionarExamenes === 'boolean' ? data.puedeGestionarExamenes : false
-      const storedTheme = isValidColorTheme(data.colorTheme) ? data.colorTheme : 'azul'
+      const storedTheme = isValidColorTheme(data.colorTheme) ? data.colorTheme : DEFAULT_COLOR_THEME
 
       if (
         typeof data.activo !== 'boolean' ||
