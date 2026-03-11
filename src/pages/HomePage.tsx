@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { FormEvent } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
-import { onAuthStateChanged, signOut } from 'firebase/auth'
+import { onAuthStateChanged, sendPasswordResetEmail, signOut } from 'firebase/auth'
 import {
   addDoc,
   collection,
@@ -625,8 +625,24 @@ export default function HomePage() {
       }
 
       const userRef = doc(db, 'usuarios', currentUid)
-      await updateDoc(userRef, {
+      const userSnap = await getDoc(userRef)
+      const rawData = userSnap.exists() ? (userSnap.data() as Record<string, unknown>) : {}
+      const activo = typeof rawData.activo === 'boolean' ? rawData.activo : perfil.activo
+      const rol: UserRole = rawData.rol === 'admin' ? 'admin' : perfil.rol
+      const puedeGestionarExamenes =
+        typeof rawData.puedeGestionarExamenes === 'boolean' ? rawData.puedeGestionarExamenes : perfil.puedeGestionarExamenes
+      const colorThemeValue = isValidColorTheme(rawData.colorTheme) ? rawData.colorTheme : perfil.colorTheme
+      const emailValue = typeof rawData.email === 'string' ? rawData.email : perfil.email
+
+      await setDoc(userRef, {
+        uid: currentUid,
         nombre: safeNombre,
+        email: emailValue,
+        activo,
+        rol,
+        puedeGestionarExamenes,
+        colorTheme: colorThemeValue,
+        createdAt: rawData.createdAt ?? serverTimestamp(),
         updatedAt: serverTimestamp(),
       })
 
@@ -636,6 +652,24 @@ export default function HomePage() {
       setStatusMessage('Perfil actualizado correctamente.')
     } catch {
       setStatusMessage('No se pudo actualizar el perfil. Inténtalo de nuevo.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleRequestPasswordChange = async () => {
+    if (!perfil?.email) {
+      setStatusMessage('No hay correo asociado para cambiar la contraseña.')
+      return
+    }
+
+    try {
+      setSaving(true)
+      setStatusMessage('')
+      await sendPasswordResetEmail(auth, perfil.email)
+      setStatusMessage('Te enviamos un enlace para cambiar tu contraseña a tu correo.')
+    } catch {
+      setStatusMessage('No se pudo enviar el enlace de cambio de contraseña. Inténtalo de nuevo.')
     } finally {
       setSaving(false)
     }
@@ -1084,6 +1118,7 @@ export default function HomePage() {
                   <button
                     type="button"
                     onClick={() => {
+                      setEditing(true)
                       navigate('/perfil')
                       setIsAccountMenuOpen(false)
                     }}
@@ -1336,6 +1371,7 @@ export default function HomePage() {
                   setStatusMessage('')
                 }}
                 onSubmit={handleSaveProfile}
+                onRequestPasswordChange={handleRequestPasswordChange}
               />
             )}
 

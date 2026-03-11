@@ -5,6 +5,7 @@ import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   onAuthStateChanged,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
 } from 'firebase/auth'
@@ -157,6 +158,26 @@ export default function AuthPage() {
     }
   }
 
+  const handleForgotPassword = async () => {
+    const normalizedEmail = email.trim()
+    if (!normalizedEmail) {
+      setMessage('Ingresa tu correo para enviarte el enlace de recuperación.')
+      return
+    }
+
+    try {
+      setLoading(true)
+      setMessage('')
+      await sendPasswordResetEmail(auth, normalizedEmail)
+      setMessage('Te enviamos un enlace para restablecer tu contraseña.')
+    } catch (error) {
+      const errorCode = (error as { code?: string }).code
+      setMessage(mapFirebaseError(errorCode ?? ''))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-300 via-blue-500 to-indigo-900 p-6">
       <section className="w-full max-w-md rounded-2xl bg-white p-8 shadow-2xl" aria-label="Formulario de autenticación">
@@ -214,6 +235,17 @@ export default function AuthPage() {
             required
             className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
           />
+
+          {mode === 'login' && (
+            <button
+              type="button"
+              onClick={() => void handleForgotPassword()}
+              disabled={loading}
+              className="justify-self-start text-xs font-semibold text-indigo-600 transition hover:underline disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
+          )}
 
           {mode === 'register' && (
             <>

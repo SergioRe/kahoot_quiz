@@ -10,6 +10,7 @@ type Props = {
   onNombreChange: (value: string) => void
   onStartEdit: () => void
   onSubmit: (event: FormEvent<HTMLFormElement>) => void
+  onRequestPasswordChange: () => void
 }
 
 export default function PerfilPage(props: Props) {
