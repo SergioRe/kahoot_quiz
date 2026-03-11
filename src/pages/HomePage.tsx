@@ -427,7 +427,7 @@ export default function HomePage() {
       }
 
       const profile: UsuarioPerfil = {
-        nombre: data.nombre ?? '',
+        nombre: data.nombre?.trim() || user.displayName?.trim() || '',
         email: data.email ?? user.email ?? '',
         activo,
         rol,

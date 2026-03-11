@@ -8,7 +8,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from 'firebase/auth'
-import { doc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { auth, db } from '../firebase'
 
 type Mode = 'login' | 'register'
@@ -107,7 +107,42 @@ export default function AuthPage() {
       setMessage('')
 
       const provider = new GoogleAuthProvider()
-      await signInWithPopup(auth, provider)
+      const { user } = await signInWithPopup(auth, provider)
+      const userRef = doc(db, 'usuarios', user.uid)
+      const userSnap = await getDoc(userRef)
+      const googleName = (user.displayName ?? '').trim()
+      const googleEmail = user.email ?? ''
+
+      if (!userSnap.exists()) {
+        await setDoc(userRef, {
+          uid: user.uid,
+          nombre: googleName,
+          email: googleEmail,
+          activo: true,
+          rol: 'usuario',
+          puedeGestionarExamenes: false,
+          colorTheme: 'azul',
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        })
+      } else {
+        const data = userSnap.data() as { nombre?: string; email?: string }
+        const shouldUpdateName = Boolean(googleName) && (!data.nombre || data.nombre === data.email)
+        const shouldUpdateEmail = Boolean(googleEmail) && data.email !== googleEmail
+
+        if (shouldUpdateName || shouldUpdateEmail) {
+          await setDoc(
+            userRef,
+            {
+              ...(shouldUpdateName ? { nombre: googleName } : {}),
+              ...(shouldUpdateEmail ? { email: googleEmail } : {}),
+              updatedAt: serverTimestamp(),
+            },
+            { merge: true },
+          )
+        }
+      }
+
       navigate('/inicio', { replace: true })
     } catch (error) {
       const errorCode = (error as { code?: string }).code
@@ -207,7 +242,15 @@ export default function AuthPage() {
                 <span>Entrar</span>
               </>
             ) : (
-              'Registrarme'
+              <>
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <path d="M20 8v6" />
+                  <path d="M17 11h6" />
+                </svg>
+                <span>Registrarme</span>
+              </>
             )}
           </button>
 
